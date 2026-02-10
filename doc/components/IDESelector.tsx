@@ -1043,7 +1043,7 @@ export default function IDESelector({
               <div className={styles.templateHint}>
                 <strong>推荐：</strong>CodeBuddy IDE 已内置集成 CloudBase MCP，建议优先使用配置集成方式。
                 <a
-                  href="https://www.codebuddy.ai/docs/zh/ide/BaaS#tcb"
+                  href="https://www.codebuddy.ai/docs/zh/ide/User-guide/Integration"
                   className={styles.templateLink}
                   target="_blank"
                   rel="noopener noreferrer"
