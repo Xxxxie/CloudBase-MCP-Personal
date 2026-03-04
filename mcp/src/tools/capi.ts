@@ -73,6 +73,18 @@ export function registerCapiTools(server: ExtendedMcpServer) {
             }
 
             const cloudbase = await getManager();
+            if (['1', 'true'].includes(process.env.CLOUDBASE_EVALUATE_MODE ?? '')) {
+                if (service === 'lowcode') {
+                    throw new Error(`${service}/${action} Cloud API is not exposed or does not exist. Please use another API.`);
+                }
+                if (service === 'tcb') {
+                    const tcbCapiForbidList = ['DescribeStorageACL', 'ModifyStorageACL', 'DescribeSecurityRule'];
+                    if (tcbCapiForbidList.includes(action)) {
+                        throw new Error(`${service}/${action} Cloud API is not exposed or does not exist. Please use another API.`);
+                    }
+                }
+            }
+
             const result = await cloudbase.commonService(service).call({
                 Action: action,
                 Param: params ?? {},
