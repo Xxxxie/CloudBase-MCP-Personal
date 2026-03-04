@@ -16,7 +16,11 @@ export function registerGatewayTools(server: ExtendedMcpServer) {
       description: "创建云函数的 HTTP 访问",
       inputSchema: {
         name: z.string().describe("函数名"),
-        path: z.string().describe("HTTP 访问路径")
+        path: z.string().describe("HTTP 访问路径"),
+        type: z
+          .enum(["Event", "HTTP"])
+          .optional()
+          .describe("函数类型，Event 为事件型云函数（默认），HTTP 为 HTTP 云函数")
       },
       annotations: {
         readOnlyHint: false,
@@ -26,11 +30,14 @@ export function registerGatewayTools(server: ExtendedMcpServer) {
         category: "gateway"
       }
     },
-    async ({ name, path }: { name: string; path: string }) => {
+    async ({ name, path, type }: { name: string; path: string; type?: "Event" | "HTTP" }) => {
       const cloudbase = await getManager()
 
+      // Event 云函数 type=1，HTTP 云函数 type=6
+      const accessType = type === "HTTP" ? 6 : 1;
+
       const result = await cloudbase.access.createAccess({
-        type: 1,
+        type: accessType as 1 | 2,  // HTTP 云函数使用 type=6，需要类型断言
         name,
         path
       });
