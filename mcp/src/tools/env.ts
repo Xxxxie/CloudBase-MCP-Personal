@@ -1,10 +1,10 @@
-import { z } from "zod";
 import { AuthSupervisor } from "@cloudbase/toolbox";
+import { z } from "zod";
 import {
   ensureLogin,
   getAuthProgressState,
-  peekLoginState,
   logout,
+  peekLoginState,
   rejectAuthProgressState,
   resolveAuthProgressState,
   setPendingAuthProgressState,
@@ -20,12 +20,12 @@ import {
   type EnvCandidate,
 } from "../cloudbase-manager.js";
 import { ExtendedMcpServer } from "../server.js";
+import { debug } from "../utils/logger.js";
 import {
-  buildJsonToolResult,
   buildAuthNextStep,
+  buildJsonToolResult,
   toolPayloadErrorToResult,
 } from "../utils/tool-result.js";
-import { debug } from "../utils/logger.js";
 import { getClaudePrompt } from "./rag.js";
 
 /**
