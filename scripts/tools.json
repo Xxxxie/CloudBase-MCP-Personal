@@ -499,7 +499,7 @@
     },
     {
       "name": "getFunctionList",
-      "description": "获取云函数列表或单个函数详情。通过 action 参数区分操作类型：list=获取函数列表（默认，无需额外参数），detail=获取函数详情（需要提供 name 参数指定函数名称）",
+      "description": "获取云函数列表或单个函数详情。通过 action 参数区分操作类型：list=获取函数列表（默认，无需额外参数），detail=获取函数详情（需要提供 name 参数指定函数名称，返回结果中包含函数当前绑定的 Layers 信息）",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -509,7 +509,7 @@
               "list",
               "detail"
             ],
-            "description": "操作类型：list=获取函数列表（默认，无需额外参数），detail=获取函数详情（需要提供 name 参数）"
+            "description": "操作类型：list=获取函数列表（默认，无需额外参数），detail=获取函数详情（需要提供 name 参数，返回结果中包含当前绑定的 Layers）"
           },
           "limit": {
             "type": "number",
@@ -948,6 +948,156 @@
         "required": [
           "action",
           "name"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "readFunctionLayers",
+      "description": "查询云函数层及函数层配置。通过 action 区分操作：listLayers=查询层列表，listLayerVersions=查询指定层的版本列表，getLayerVersion=查询层版本详情（含下载地址/元信息），getFunctionLayers=查询指定函数当前绑定的层。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "listLayers",
+              "listLayerVersions",
+              "getLayerVersion",
+              "getFunctionLayers"
+            ],
+            "description": "操作类型：listLayers=查询层列表，listLayerVersions=查询指定层的版本列表，getLayerVersion=查询层版本详情，getFunctionLayers=查询指定函数当前绑定的层"
+          },
+          "name": {
+            "type": "string",
+            "description": "层名称。listLayerVersions 和 getLayerVersion 操作时必填"
+          },
+          "version": {
+            "type": "number",
+            "description": "层版本号。getLayerVersion 操作时必填"
+          },
+          "runtime": {
+            "type": "string",
+            "description": "运行时筛选。listLayers 操作时可选"
+          },
+          "searchKey": {
+            "type": "string",
+            "description": "层名称搜索关键字。listLayers 操作时可选"
+          },
+          "offset": {
+            "type": "number",
+            "description": "分页偏移。listLayers 操作时可选"
+          },
+          "limit": {
+            "type": "number",
+            "description": "分页数量。listLayers 操作时可选"
+          },
+          "functionName": {
+            "type": "string",
+            "description": "函数名称。getFunctionLayers 操作时必填"
+          },
+          "codeSecret": {
+            "type": "string",
+            "description": "代码保护密钥。getFunctionLayers 操作时可选"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "writeFunctionLayers",
+      "description": "管理云函数层和函数层绑定。通过 action 区分操作：createLayerVersion=创建层版本，deleteLayerVersion=删除层版本，attachLayer=给函数追加绑定层，detachLayer=解绑函数层，updateFunctionLayers=整体更新函数层数组以调整顺序或批量更新。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "createLayerVersion",
+              "deleteLayerVersion",
+              "attachLayer",
+              "detachLayer",
+              "updateFunctionLayers"
+            ],
+            "description": "操作类型：createLayerVersion=创建层版本，deleteLayerVersion=删除层版本，attachLayer=追加绑定层，detachLayer=解绑层，updateFunctionLayers=整体更新函数层数组"
+          },
+          "name": {
+            "type": "string",
+            "description": "层名称。createLayerVersion 和 deleteLayerVersion 操作时必填"
+          },
+          "version": {
+            "type": "number",
+            "description": "层版本号。deleteLayerVersion 操作时必填"
+          },
+          "contentPath": {
+            "type": "string",
+            "description": "层内容路径，可以是目录或 ZIP 文件路径。createLayerVersion 操作时与 base64Content 二选一"
+          },
+          "base64Content": {
+            "type": "string",
+            "description": "层内容的 base64 编码。createLayerVersion 操作时与 contentPath 二选一"
+          },
+          "runtimes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "层适用的运行时列表。createLayerVersion 操作时必填"
+          },
+          "description": {
+            "type": "string",
+            "description": "层版本描述。createLayerVersion 操作时可选"
+          },
+          "licenseInfo": {
+            "type": "string",
+            "description": "许可证信息。createLayerVersion 操作时可选"
+          },
+          "functionName": {
+            "type": "string",
+            "description": "函数名称。attachLayer、detachLayer、updateFunctionLayers 操作时必填"
+          },
+          "layerName": {
+            "type": "string",
+            "description": "要绑定或解绑的层名称。attachLayer 和 detachLayer 操作时必填"
+          },
+          "layerVersion": {
+            "type": "number",
+            "description": "要绑定或解绑的层版本号。attachLayer 和 detachLayer 操作时必填"
+          },
+          "layers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "LayerName": {
+                  "type": "string",
+                  "description": "层名称"
+                },
+                "LayerVersion": {
+                  "type": "number",
+                  "description": "层版本号"
+                }
+              },
+              "required": [
+                "LayerName",
+                "LayerVersion"
+              ],
+              "additionalProperties": false
+            },
+            "description": "目标函数层数组。updateFunctionLayers 操作时必填，顺序即最终顺序"
+          },
+          "codeSecret": {
+            "type": "string",
+            "description": "代码保护密钥。attachLayer 和 detachLayer 操作时可选"
+          }
+        },
+        "required": [
+          "action"
         ],
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
