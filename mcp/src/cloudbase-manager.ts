@@ -8,6 +8,10 @@ import { CloudBaseOptions, Logger } from './types.js';
 import { debug, error } from './utils/logger.js';
 import { buildAuthNextStep, throwToolPayloadError } from './utils/tool-result.js';
 
+// Timeout for envId auto-resolution flow.
+// 10 minutes (600 seconds) - matches InteractiveServer timeout
+const ENV_ID_TIMEOUT = 600000;
+
 export type EnvCandidate = {
     envId: string;
     alias?: string;
