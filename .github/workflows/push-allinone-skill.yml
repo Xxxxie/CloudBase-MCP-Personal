@@ -43,8 +43,9 @@ jobs:
 
       - name: Sync to target repository
         run: |
-          rm -rf cloudbase-skills/cloudbase
-          cp -r /tmp/allinone-build/cloudbase cloudbase-skills/cloudbase
+          rm -rf cloudbase-skills/skills/cloudbase
+          mkdir -p cloudbase-skills/skills
+          cp -r /tmp/allinone-build/cloudbase cloudbase-skills/skills/cloudbase
 
       - name: Commit and push
         run: |
