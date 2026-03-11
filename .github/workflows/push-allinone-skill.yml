@@ -1,0 +1,55 @@
+name: Push Allinone Skill Repository
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'config/.claude/skills/**'
+      - 'scripts/build-allinone-skill.ts'
+      - 'scripts/skills-repo-template/**'
+  workflow_dispatch:
+
+jobs:
+  push-allinone:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout source repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build allinone skill
+        run: npx tsx scripts/build-allinone-skill.ts --dir /tmp/allinone-build
+
+      - name: Checkout target repository
+        uses: actions/checkout@v4
+        with:
+          repository: TencentCloudBase/cloudbase-skills
+          path: cloudbase-skills
+          token: ${{ secrets.SKILLS_REPO_TOKEN }}
+
+      - name: Sync to target repository
+        run: |
+          rm -rf cloudbase-skills/cloudbase
+          cp -r /tmp/allinone-build/cloudbase cloudbase-skills/cloudbase
+
+      - name: Commit and push
+        run: |
+          cd cloudbase-skills
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.SKILLS_REPO_TOKEN }}@github.com/TencentCloudBase/cloudbase-skills.git
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "chore: sync allinone skill from CloudBase-AI-ToolKit [skip ci]"
+            git push
+          else
+            echo "No changes to commit"
+          fi
