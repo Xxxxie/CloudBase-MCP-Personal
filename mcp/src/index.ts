@@ -42,6 +42,17 @@ export { simplifyEnvList } from "./tools/env.js";
 export { RAW_IDE_FILE_MAPPINGS } from "./tools/setup.js";
 export type { InteractiveResult } from "./interactive-server.js";
 
+// Export runtime constants for multi-language support
+export {
+  SUPPORTED_RUNTIMES,
+  ALL_SUPPORTED_RUNTIMES,
+  DEFAULT_RUNTIME,
+  RECOMMENDED_RUNTIMES,
+  formatRuntimeList,
+  SUPPORTED_NODEJS_RUNTIMES,
+  DEFAULT_NODEJS_RUNTIME
+} from "./tools/functions.js";
+
 /**
  * Get interactive server instance (CommonJS compatible)
  */
