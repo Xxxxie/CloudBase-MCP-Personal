@@ -28,12 +28,18 @@ jobs:
       - name: Build allinone skill
         run: npx tsx scripts/build-allinone-skill.ts --dir /tmp/allinone-build
 
-      - name: Checkout target repository
-        uses: actions/checkout@v4
-        with:
-          repository: TencentCloudBase/cloudbase-skills
-          path: cloudbase-skills
-          token: ${{ secrets.SKILLS_REPO_TOKEN }}
+      - name: Setup target repository
+        run: |
+          git clone https://x-access-token:${{ secrets.SKILLS_REPO_TOKEN }}@github.com/TencentCloudBase/cloudbase-skills.git cloudbase-skills || true
+          if [ ! -d "cloudbase-skills/.git" ]; then
+            mkdir -p cloudbase-skills
+            cd cloudbase-skills
+            git init
+            git remote add origin https://x-access-token:${{ secrets.SKILLS_REPO_TOKEN }}@github.com/TencentCloudBase/cloudbase-skills.git
+          else
+            cd cloudbase-skills
+            git remote set-url origin https://x-access-token:${{ secrets.SKILLS_REPO_TOKEN }}@github.com/TencentCloudBase/cloudbase-skills.git
+          fi
 
       - name: Sync to target repository
         run: |
@@ -45,11 +51,10 @@ jobs:
           cd cloudbase-skills
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.SKILLS_REPO_TOKEN }}@github.com/TencentCloudBase/cloudbase-skills.git
-          if [ -n "$(git status --porcelain)" ]; then
-            git add .
-            git commit -m "chore: sync allinone skill from CloudBase-AI-ToolKit [skip ci]"
-            git push
-          else
+          git add .
+          if git diff --staged --quiet; then
             echo "No changes to commit"
+          else
+            git commit -m "chore: sync allinone skill from CloudBase-AI-ToolKit [skip ci]"
+            git push origin HEAD:main
           fi
