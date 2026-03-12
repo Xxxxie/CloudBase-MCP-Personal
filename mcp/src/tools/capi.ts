@@ -16,6 +16,31 @@ const ALLOWED_SERVICES = [
 
 type AllowedService = (typeof ALLOWED_SERVICES)[number];
 
+function buildCapiErrorMessage(service: AllowedService, action: string, error: unknown): string {
+    const baseMessage = error instanceof Error ? error.message : String(error);
+    const suggestions: string[] = [];
+
+    if (/invalid or not found|does not exist|not recognized/i.test(baseMessage)) {
+        suggestions.push(
+            `Action \`${action}\` 可能不存在或不对外开放，请确认 service=\`${service}\` 下该 Action 在当前 API 版本是否可用。`,
+        );
+    }
+
+    if (/parameter\\s+`?.+`?\\s+is not recognized/i.test(baseMessage)) {
+        suggestions.push("请求参数名与 API 定义不一致，请核对参数字段（区分大小写）并移除未支持字段。");
+    }
+
+    if (/ECONNRESET|socket hang up|ETIMEDOUT|ENOTFOUND/i.test(baseMessage)) {
+        suggestions.push("网络请求异常，建议稍后重试，并检查本地网络/代理设置。");
+    }
+
+    if (suggestions.length === 0) {
+        suggestions.push("请检查 service/action/params 是否与云 API 文档一致后重试。");
+    }
+
+    return `[${service}/${action}] 调用失败: ${baseMessage}\n建议：${suggestions.join(" ")}`;
+}
+
 /**
  * Register Common Service based Cloud API tool.
  * The tool is intentionally generic; callers must read project rules or
@@ -101,10 +126,15 @@ export function registerCapiTools(server: ExtendedMcpServer) {
                 }
             }
 
-            const result = await cloudbase.commonService(service).call({
-                Action: action,
-                Param: params ?? {},
-            });
+            let result: unknown;
+            try {
+                result = await cloudbase.commonService(service).call({
+                    Action: action,
+                    Param: params ?? {},
+                });
+            } catch (error) {
+                throw new Error(buildCapiErrorMessage(service, action, error));
+            }
             logCloudBaseResult(logger, result);
 
             return {
@@ -122,4 +152,3 @@ export function registerCapiTools(server: ExtendedMcpServer) {
         },
     );
 }
-
