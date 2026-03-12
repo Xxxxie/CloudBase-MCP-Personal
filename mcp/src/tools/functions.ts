@@ -206,6 +206,34 @@ function buildFunctionOperationErrorMessage(
   return `[${operation}] ${baseMessage}\n建议：${suggestions.join(" ")}`;
 }
 
+function wrapFunctionOperationError(
+  operation: "createFunction" | "updateFunctionCode",
+  functionName: string,
+  functionRootPath: string | undefined,
+  error: unknown,
+): Error {
+  const wrappedError = new Error(
+    buildFunctionOperationErrorMessage(
+      operation,
+      functionName,
+      functionRootPath,
+      error,
+    ),
+  );
+
+  if (error && typeof error === "object") {
+    Object.assign(wrappedError, error);
+  }
+
+  if (error instanceof Error) {
+    wrappedError.name = error.name;
+    wrappedError.stack = error.stack;
+    (wrappedError as Error & { cause?: unknown }).cause = error;
+  }
+
+  return wrappedError;
+}
+
 export function registerFunctionTools(server: ExtendedMcpServer) {
   // 获取 cloudBaseOptions，如果没有则为 undefined
   const cloudBaseOptions = server.cloudBaseOptions;
@@ -479,13 +507,11 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
           force,
         });
       } catch (error) {
-        throw new Error(
-          buildFunctionOperationErrorMessage(
-            "createFunction",
-            func.name,
-            processedRootPath,
-            error,
-          ),
+        throw wrapFunctionOperationError(
+          "createFunction",
+          func.name,
+          processedRootPath,
+          error,
         );
       }
       logCloudBaseResult(server.logger, result);
@@ -562,13 +588,11 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
       try {
         result = await cloudbase.functions.updateFunctionCode(updateParams);
       } catch (error) {
-        throw new Error(
-          buildFunctionOperationErrorMessage(
-            "updateFunctionCode",
-            name,
-            processedRootPath,
-            error,
-          ),
+        throw wrapFunctionOperationError(
+          "updateFunctionCode",
+          name,
+          processedRootPath,
+          error,
         );
       }
       logCloudBaseResult(server.logger, result);
