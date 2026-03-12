@@ -94,8 +94,9 @@ npm run changelog
 1. **模块化 skill 源**：在 `skills/` 中维护
 2. **总入口 guideline 源**：在 `guideline/` 中维护
 3. **IDE / MCP 机器配置源**：在 `editor-config/` 中维护
-4. **CodeBuddy 插件专属源**：在 `config/codebuddy-plugin/` 中维护
-5. **兼容产物**：统一生成到 `.generated/compat-config/`，不要手改
+4. **Claude skills 兼容镜像**：保留在 `config/.claude/skills/`，由 source 自动同步，不要手改
+5. **CodeBuddy 插件专属源**：在 `config/codebuddy-plugin/` 中维护
+6. **兼容产物**：统一生成到 `.generated/compat-config/`，不要手改
 
 ### 当前目录关系
 
@@ -103,6 +104,7 @@ npm run changelog
 skills/                    # 模块化 skills 唯一语义源
 guideline/                 # 总入口 guideline 唯一语义源
 editor-config/             # IDE / MCP 配置唯一机器源
+config/.claude/skills/     # Claude skills 兼容镜像（生成并提交）
 config/codebuddy-plugin/   # CodeBuddy 插件保留源
 
 .generated/compat-config/  # 兼容产物输出目录（生成）
@@ -115,6 +117,7 @@ config/codebuddy-plugin/   # CodeBuddy 插件保留源
 
 1. 修改 `skills/`、`guideline/`、`editor-config/`
 2. 如果是 CodeBuddy 插件专属内容，修改 `config/codebuddy-plugin/`
+3. `config/.claude/skills/` 会由 CI 自动从 `skills/` 同步，不要手改
 3. 如果 skill 内容变更影响 prompts 文档，运行：
    ```bash
    node scripts/generate-prompts-data.mjs && node scripts/generate-prompts.mjs
@@ -128,6 +131,7 @@ config/codebuddy-plugin/   # CodeBuddy 插件保留源
 只有在你需要本地验证兼容面，或者要手动同步外部模板仓库时，才运行下面这些脚本：
 
 ```bash
+node scripts/sync-claude-skills-mirror.mjs
 node scripts/build-compat-config.mjs
 node scripts/diff-compat-config.mjs
 node scripts/sync-config.mjs
@@ -135,6 +139,7 @@ node scripts/sync-config.mjs
 
 脚本含义：
 
+- `sync-claude-skills-mirror.mjs`：将 `skills/` 同步到仓库内保留的 `config/.claude/skills/` 兼容镜像
 - `build-compat-config.mjs`：从最小源生成 `.generated/compat-config/`
 - `diff-compat-config.mjs`：检查生成结果是否与兼容基线一致
 - `sync-config.mjs`：将兼容产物同步到外部 `awsome-cloudbase-examples` 仓库
@@ -176,6 +181,7 @@ node scripts/sync-config.mjs
 ### 重要提示
 
 - ⚠️ **不要手改** `.generated/compat-config/` 中的文件
+- ⚠️ **不要手改** `config/.claude/skills/`，它是兼容镜像
 - ⚠️ **不要把 `config/` 当作通用 rules 源目录**
 - ✅ **新增模块**：在 `skills/` 中创建
 - ✅ **修改总控 guideline**：在 `guideline/` 中修改

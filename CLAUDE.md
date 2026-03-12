@@ -84,10 +84,12 @@ cp -r doc/* {cloudbase-docs dir}/docs/ai/cloudbase-ai-toolkit/
 <fix-config-hardlinks>
 兼容文件不再通过硬链接维护。
 日常维护时，直接修改 `skills/`、`guideline/`、`editor-config/` 并提交即可。
+`config/.claude/skills/` 是从 `skills/` 自动同步的兼容镜像，不要手改。
 兼容产物的生成和对外发布主要由 CI / workflow 负责，不需要像以前一样手动跑同步脚本。
 只有在需要本地验证或手动同步外部模板仓库时，才执行：
-1. `node scripts/build-compat-config.mjs`
-2. `node scripts/sync-config.mjs`
+1. `node scripts/sync-claude-skills-mirror.mjs`
+2. `node scripts/build-compat-config.mjs`
+3. `node scripts/sync-config.mjs`
 </fix-config-hardlinks>
 
 
@@ -181,10 +183,12 @@ cp -r doc/* {cloudbase-docs dir}/docs/ai/cloudbase-ai-toolkit/
 <fix-config-hardlinks>
 兼容文件不再通过硬链接维护。
 日常维护时，直接修改 `skills/`、`guideline/`、`editor-config/` 并提交即可。
+`config/.claude/skills/` 是从 `skills/` 自动同步的兼容镜像，不要手改。
 兼容产物的生成和对外发布主要由 CI / workflow 负责，不需要像以前一样手动跑同步脚本。
 只有在需要本地验证或手动同步外部模板仓库时，才执行：
-1. `node scripts/build-compat-config.mjs`
-2. `node scripts/sync-config.mjs`
+1. `node scripts/sync-claude-skills-mirror.mjs`
+2. `node scripts/build-compat-config.mjs`
+3. `node scripts/sync-config.mjs`
 </fix-config-hardlinks>
 
 

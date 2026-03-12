@@ -18,8 +18,9 @@ Generation and publication are now enforced by CI/workflows.
 Only run the generated compatibility pipeline manually when you need local
 verification or an explicit external sync:
 
-  1. node scripts/build-compat-config.mjs
-  2. node scripts/sync-config.mjs
+  1. node scripts/sync-claude-skills-mirror.mjs
+  2. node scripts/build-compat-config.mjs
+  3. node scripts/sync-config.mjs
 `.trim();
 
 console.error(message);

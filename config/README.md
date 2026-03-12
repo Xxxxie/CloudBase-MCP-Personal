@@ -8,6 +8,13 @@ Current source of truth lives in:
 - `guideline/`
 - `editor-config/`
 
+This repository also keeps one Git-tracked compatibility mirror for external
+consumers:
+
+- `config/.claude/skills/`
+
+That mirror is generated from `skills/` and should not be edited manually.
+
 Compatibility artifacts for external consumers are generated into:
 
 - `.generated/compat-config/`
@@ -19,5 +26,7 @@ CI/workflows in most cases.
 Run generation scripts manually only when you need local verification or an explicit
 sync to external repositories.
 
-`config/` is kept temporarily only for sources that have not been migrated yet, such
-as `codebuddy-plugin`.
+`config/` is kept only for:
+
+- the generated `config/.claude/skills/` compatibility mirror
+- sources that have not been migrated yet, such as `codebuddy-plugin`
