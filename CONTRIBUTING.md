@@ -91,9 +91,9 @@ npm run changelog
 
 ### 核心原则
 
-1. **模块化 skill 源**：在 `skills/` 中维护
-2. **总入口 guideline 源**：在 `guideline/` 中维护
-3. **IDE / MCP 机器配置源**：在 `editor-config/` 中维护
+1. **模块化 skill 源**：在 `config/source/skills/` 中维护
+2. **总入口 guideline 源**：在 `config/source/guideline/` 中维护
+3. **IDE / MCP 机器配置源**：在 `config/source/editor-config/` 中维护
 4. **Claude skills 兼容镜像**：保留在 `config/.claude/skills/`，由 source 自动同步，不要手改
 5. **CodeBuddy 插件专属源**：在 `config/codebuddy-plugin/` 中维护
 6. **兼容产物**：统一生成到 `.generated/compat-config/`，不要手改
@@ -101,9 +101,9 @@ npm run changelog
 ### 当前目录关系
 
 ```
-skills/                    # 模块化 skills 唯一语义源
-guideline/                 # 总入口 guideline 唯一语义源
-editor-config/             # IDE / MCP 配置唯一机器源
+config/source/skills/      # 模块化 skills 唯一语义源
+config/source/guideline/   # 总入口 guideline 唯一语义源
+config/source/editor-config/ # IDE / MCP 配置唯一机器源
 config/.claude/skills/     # Claude skills 兼容镜像（生成并提交）
 config/codebuddy-plugin/   # CodeBuddy 插件保留源
 
@@ -115,9 +115,9 @@ config/codebuddy-plugin/   # CodeBuddy 插件保留源
 
 大多数情况下，日常修改只需要改源目录并提交，不需要像以前一样手动跑同步脚本：
 
-1. 修改 `skills/`、`guideline/`、`editor-config/`
+1. 修改 `config/source/skills/`、`config/source/guideline/`、`config/source/editor-config/`
 2. 如果是 CodeBuddy 插件专属内容，修改 `config/codebuddy-plugin/`
-3. `config/.claude/skills/` 会由 CI 自动从 `skills/` 同步，不要手改
+3. `config/.claude/skills/` 会由 CI 自动从 `config/source/skills/` 同步，不要手改
 3. 如果 skill 内容变更影响 prompts 文档，运行：
    ```bash
    node scripts/generate-prompts-data.mjs && node scripts/generate-prompts.mjs
@@ -139,14 +139,14 @@ node scripts/sync-config.mjs
 
 脚本含义：
 
-- `sync-claude-skills-mirror.mjs`：将 `skills/` 同步到仓库内保留的 `config/.claude/skills/` 兼容镜像
+- `sync-claude-skills-mirror.mjs`：将 `config/source/skills/` 同步到仓库内保留的 `config/.claude/skills/` 兼容镜像
 - `build-compat-config.mjs`：从最小源生成 `.generated/compat-config/`
 - `diff-compat-config.mjs`：检查生成结果是否与兼容基线一致
 - `sync-config.mjs`：将兼容产物同步到外部 `awsome-cloudbase-examples` 仓库
 
 ### 如何新增模块 Skill
 
-1. 在 `skills/[module-name]/SKILL.md` 中创建模块
+1. 在 `config/source/skills/[module-name]/SKILL.md` 中创建模块
 2. 如该模块还包含补充文档，可与 `SKILL.md` 并列放置
 3. 如果需要更新 prompts 展示，运行：
    ```bash
@@ -155,7 +155,7 @@ node scripts/sync-config.mjs
 
 ### 如何修改总入口 guideline
 
-1. 修改 `guideline/cloudbase/SKILL.md`
+1. 修改 `config/source/guideline/cloudbase/SKILL.md`
 2. 这会影响：
    - all-in-one skill 构建
    - skills repo 里的 `cloudbase-guidelines`
@@ -168,7 +168,7 @@ node scripts/sync-config.mjs
 
 新增 IDE 时，不再修改硬链接脚本，而是更新生成链和消费映射：
 
-1. 在 `editor-config/` 中添加该 IDE 所需的机器配置或兼容说明文件
+1. 在 `config/source/editor-config/` 中添加该 IDE 所需的机器配置或兼容说明文件
 2. 更新 `scripts/build-compat-config.mjs`，让生成器输出该 IDE 的兼容产物
 3. 更新 `mcp/src/tools/setup.ts` 中的 IDE 枚举、文件映射和描述
 4. 运行：
@@ -183,9 +183,9 @@ node scripts/sync-config.mjs
 - ⚠️ **不要手改** `.generated/compat-config/` 中的文件
 - ⚠️ **不要手改** `config/.claude/skills/`，它是兼容镜像
 - ⚠️ **不要把 `config/` 当作通用 rules 源目录**
-- ✅ **新增模块**：在 `skills/` 中创建
-- ✅ **修改总控 guideline**：在 `guideline/` 中修改
-- ✅ **修改 IDE / MCP 配置**：在 `editor-config/` 中修改
+- ✅ **新增模块**：在 `config/source/skills/` 中创建
+- ✅ **修改总控 guideline**：在 `config/source/guideline/` 中修改
+- ✅ **修改 IDE / MCP 配置**：在 `config/source/editor-config/` 中修改
 - ✅ **需要本地验证时**：运行 `node scripts/diff-compat-config.mjs`
 
 ## 代码风格

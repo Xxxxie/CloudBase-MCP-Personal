@@ -2,7 +2,7 @@
 
 /**
  * Build Agent Skills Repository Script
- * Collects all agent skills from skills/ and outputs them
+ * Collects all agent skills from config/source/skills/ and outputs them
  * to .skill-repo-output/skills/ for publishing to a separate repository.
  */
 
@@ -24,7 +24,7 @@ const colors = {
 };
 
 // Configuration
-const SKILLS_SOURCE_DIR = "skills";
+const SKILLS_SOURCE_DIR = path.join("config", "source", "skills");
 const OUTPUT_DIR = ".skills-repo-output";
 const SKILLS_OUTPUT_DIR = path.join(OUTPUT_DIR, "skills");
 const README_TEMPLATE_PATH = path.join(
@@ -32,7 +32,13 @@ const README_TEMPLATE_PATH = path.join(
   "skills-repo-template",
   "readme-template.md",
 );
-const GUIDELINE_SOURCE_DIR = path.join(projectRoot, "guideline", "cloudbase");
+const GUIDELINE_SOURCE_DIR = path.join(
+  projectRoot,
+  "config",
+  "source",
+  "guideline",
+  "cloudbase",
+);
 
 /**
  * Parse SKILL.md frontmatter

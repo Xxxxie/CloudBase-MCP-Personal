@@ -12,7 +12,9 @@ const ROOT_DIR = path.resolve(__dirname, "..");
 
 const GENERATED_CONFIG_DIR = path.join(ROOT_DIR, ".generated", "compat-config");
 const SOURCE_CONFIG_DIR = path.join(ROOT_DIR, "config");
-const BASELINE_FILE = path.join(ROOT_DIR, "editor-config", "compat-baseline.json");
+const SOURCE_DIR = path.join(SOURCE_CONFIG_DIR, "source");
+const EDITOR_CONFIG_DIR = path.join(SOURCE_DIR, "editor-config");
+const BASELINE_FILE = path.join(EDITOR_CONFIG_DIR, "compat-baseline.json");
 
 const LIVE_SOURCE_ROOTS = ["codebuddy-plugin"];
 const EXTRA_EXPECTED_GENERATED = [
@@ -82,11 +84,11 @@ function compareCompatSurface() {
         sha256(path.join(SOURCE_CONFIG_DIR, file)),
       ]),
     ),
-    "IFLOW.md": sha256(path.join(ROOT_DIR, "editor-config", "guides", "cloudbase-rules.mdc")),
-    ".iflow/settings.json": sha256(path.join(ROOT_DIR, "editor-config", "files", "iflow.settings.json")),
-    "mcp.json": sha256(path.join(ROOT_DIR, "editor-config", "files", "aider.mcp.json")),
+    "IFLOW.md": sha256(path.join(EDITOR_CONFIG_DIR, "guides", "cloudbase-rules.mdc")),
+    ".iflow/settings.json": sha256(path.join(EDITOR_CONFIG_DIR, "files", "iflow.settings.json")),
+    "mcp.json": sha256(path.join(EDITOR_CONFIG_DIR, "files", "aider.mcp.json")),
     ".comate/rules/cloudbaase-rules.mdr": sha256(
-      path.join(ROOT_DIR, "editor-config", "guides", "cloudbase-rules.mdc"),
+      path.join(EDITOR_CONFIG_DIR, "guides", "cloudbase-rules.mdc"),
     ),
   };
 

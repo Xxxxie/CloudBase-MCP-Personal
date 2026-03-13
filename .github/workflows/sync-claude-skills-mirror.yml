@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'skills/**'
+      - 'config/source/skills/**'
       - 'scripts/sync-claude-skills-mirror.mjs'
       - '.github/workflows/sync-claude-skills-mirror.yml'
   workflow_dispatch:

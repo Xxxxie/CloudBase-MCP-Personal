@@ -10,7 +10,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, "..");
 
-const DEFAULT_SOURCE_DIR = path.join(ROOT_DIR, "skills");
+const DEFAULT_SOURCE_DIR = path.join(
+  ROOT_DIR,
+  "config",
+  "source",
+  "skills",
+);
 const DEFAULT_TARGET_DIR = path.join(ROOT_DIR, "config", ".claude", "skills");
 
 function shouldSkip(name) {

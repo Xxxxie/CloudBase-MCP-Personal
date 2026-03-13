@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'skills/**'
-      - 'guideline/**'
+      - 'config/source/skills/**'
+      - 'config/source/guideline/**'
       - 'scripts/build-skills-repo.mjs'
       - 'scripts/skills-repo-template/readme-template.md'
   workflow_dispatch:

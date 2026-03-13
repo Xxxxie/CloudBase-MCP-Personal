@@ -4,16 +4,16 @@ This directory is no longer the primary source for AI rules or editor compatibil
 
 Current source of truth lives in:
 
-- `skills/`
-- `guideline/`
-- `editor-config/`
+- `config/source/skills/`
+- `config/source/guideline/`
+- `config/source/editor-config/`
 
 This repository also keeps one Git-tracked compatibility mirror for external
 consumers:
 
 - `config/.claude/skills/`
 
-That mirror is generated from `skills/` and should not be edited manually.
+That mirror is generated from `config/source/skills/` and should not be edited manually.
 
 Compatibility artifacts for external consumers are generated into:
 

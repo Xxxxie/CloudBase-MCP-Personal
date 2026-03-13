@@ -26,11 +26,11 @@ test('buildCompatConfig generates compatibility artifacts from minimal sources',
 
   expect(result.skillCount).toBeGreaterThan(0);
   const compatGuide = fs.readFileSync(
-    path.join(ROOT_DIR, 'editor-config', 'guides', 'cloudbase-rules.mdc'),
+    path.join(ROOT_DIR, 'config', 'source', 'editor-config', 'guides', 'cloudbase-rules.mdc'),
     'utf8',
   );
   const authWebSkill = fs.readFileSync(
-    path.join(ROOT_DIR, 'skills', 'auth-web', 'SKILL.md'),
+    path.join(ROOT_DIR, 'config', 'source', 'skills', 'auth-web', 'SKILL.md'),
     'utf8',
   );
 

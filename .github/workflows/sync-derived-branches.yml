@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'guideline/**'
-      - 'skills/**'
+      - 'config/source/guideline/**'
+      - 'config/source/skills/**'
       - 'scripts/build-allinone-skill.ts'
       - 'scripts/sync-codebuddy-plugin.ts'
   workflow_dispatch:

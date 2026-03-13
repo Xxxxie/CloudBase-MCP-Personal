@@ -9,9 +9,9 @@ sources inside config/.
 Normal day-to-day editing no longer requires a replacement command.
 Edit the source directories directly and commit your changes:
 
-  - skills/
-  - guideline/
-  - editor-config/
+  - config/source/skills/
+  - config/source/guideline/
+  - config/source/editor-config/
 
 Generation and publication are now enforced by CI/workflows.
 

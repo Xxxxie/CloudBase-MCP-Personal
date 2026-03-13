@@ -34,8 +34,8 @@ const TOOLKIT_ROOT = path.resolve(__dirname, "..");
 
 // Source of truth paths (relative to toolkit root)
 const SOURCES = {
-  mainRules: 'guideline/cloudbase/SKILL.md',
-  skillsDir: 'skills',
+  mainRules: 'config/source/guideline/cloudbase/SKILL.md',
+  skillsDir: 'config/source/skills',
 };
 
 // Skills to exclude from the bundle

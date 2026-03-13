@@ -8,8 +8,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, "..");
 
-const SKILLS_DIR = path.join(ROOT_DIR, "skills");
-const EDITOR_CONFIG_DIR = path.join(ROOT_DIR, "editor-config");
+const SOURCE_DIR = path.join(ROOT_DIR, "config", "source");
+const SKILLS_DIR = path.join(SOURCE_DIR, "skills");
+const EDITOR_CONFIG_DIR = path.join(SOURCE_DIR, "editor-config");
 const COMPAT_GUIDE_FILE = path.join(
   EDITOR_CONFIG_DIR,
   "guides",
@@ -212,7 +213,12 @@ export function buildCompatConfig(options = {}) {
     throw new Error(`Compat guide file not found: ${COMPAT_GUIDE_FILE}`);
   }
 
-  fs.rmSync(outputDir, { recursive: true, force: true });
+  fs.rmSync(outputDir, {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 50,
+  });
   ensureDir(outputDir);
 
   const skillNames = getSkillDirectories();

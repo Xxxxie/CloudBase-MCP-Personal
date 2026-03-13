@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const ROOT_DIR = path.join(__dirname, '..');
-const SKILLS_DIR = path.join(ROOT_DIR, 'skills');
+const SKILLS_DIR = path.join(ROOT_DIR, 'config', 'source', 'skills');
 const PROMPTS_DIR = path.join(ROOT_DIR, 'doc/prompts');
 const CONFIG_FILE = path.join(PROMPTS_DIR, 'config.yaml');
 const SIDEBAR_FILE = path.join(ROOT_DIR, 'doc/sidebar.json');

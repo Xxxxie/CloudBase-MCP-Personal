@@ -4,13 +4,20 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { buildCompatConfig } from "./build-compat-config.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, "..");
 
-const LEGACY_CONFIG_DIR = path.join(ROOT_DIR, "config");
-const BASELINE_FILE = path.join(ROOT_DIR, "editor-config", "compat-baseline.json");
+const GENERATED_CONFIG_DIR = path.join(ROOT_DIR, ".generated", "compat-config");
+const BASELINE_FILE = path.join(
+  ROOT_DIR,
+  "config",
+  "source",
+  "editor-config",
+  "compat-baseline.json",
+);
 
 const BASELINE_ROOTS = [
   ".agent",
@@ -85,14 +92,16 @@ function collectFiles(rootDir, roots) {
 }
 
 function main() {
-  const files = collectFiles(LEGACY_CONFIG_DIR, BASELINE_ROOTS);
+  buildCompatConfig({ outputDir: GENERATED_CONFIG_DIR });
+
+  const files = collectFiles(GENERATED_CONFIG_DIR, BASELINE_ROOTS);
   const manifest = {
     generatedAt: new Date().toISOString(),
     roots: BASELINE_ROOTS,
     files: Object.fromEntries(
       files.map((relativePath) => [
         relativePath,
-        sha256(path.join(LEGACY_CONFIG_DIR, relativePath)),
+        sha256(path.join(GENERATED_CONFIG_DIR, relativePath)),
       ]),
     ),
   };
