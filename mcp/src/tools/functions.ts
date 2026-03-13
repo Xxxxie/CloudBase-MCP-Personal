@@ -247,13 +247,13 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
     {
       title: "查询云函数列表或详情",
       description:
-        "获取云函数列表或单个函数详情。通过 action 参数区分操作类型：list=获取函数列表（默认，无需额外参数），detail=获取函数详情（需要提供 name 参数指定函数名称，返回结果中包含函数当前绑定的 Layers 信息）",
+        "获取云函数列表或单个函数详情。通过 action 参数区分操作类型：list=获取函数列表（默认，无需额外参数），detail=获取函数详情（需要提供 name 参数指定函数名称，并可通过 include 补充返回层信息、代码下载链接等附加字段）",
       inputSchema: {
         action: z
           .enum(["list", "detail"])
           .optional()
           .describe(
-            "操作类型：list=获取函数列表（默认，无需额外参数），detail=获取函数详情（需要提供 name 参数，返回结果中包含当前绑定的 Layers）",
+            "操作类型：list=获取函数列表（默认，无需额外参数），detail=获取函数详情（需要提供 name 参数）",
           ),
         limit: z.number().optional().describe("范围（list 操作时使用）"),
         offset: z.number().optional().describe("偏移（list 操作时使用）"),
@@ -263,10 +263,16 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
           .describe(
             "要查询的函数名称。当 action='detail' 时，此参数为必填项，必须提供已存在的函数名称。可通过 action='list' 操作获取可用的函数名称列表",
           ),
+        include: z
+          .array(z.enum(["layers", "downloadUrl", "all"]))
+          .optional()
+          .describe(
+            "仅 action='detail' 时使用。补充返回字段：layers=显式返回当前绑定的 Layers，downloadUrl=附带代码包临时下载链接，all=返回上述全部补充字段",
+          ),
         codeSecret: z
           .string()
           .optional()
-          .describe("代码保护密钥（detail 操作时使用）"),
+          .describe("代码保护密钥（detail 和 downloadUrl 补充信息使用）"),
       },
       annotations: {
         readOnlyHint: true,
@@ -279,12 +285,14 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
       limit,
       offset,
       name,
+      include,
       codeSecret,
     }: {
       action?: "list" | "detail";
       limit?: number;
       offset?: number;
       name?: string;
+      include?: Array<"layers" | "downloadUrl" | "all">;
       codeSecret?: string;
     }) => {
       // 使用闭包中的 cloudBaseOptions
@@ -309,84 +317,34 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
           name,
           codeSecret,
         );
-        logCloudBaseResult(server.logger, result);
+        const includeSet = new Set(include ?? []);
+        const detailResult: typeof result & { DownloadUrl?: string } = {
+          ...result,
+        };
+
+        if (includeSet.has("downloadUrl") || includeSet.has("all")) {
+          const downloadResult = await cloudbase.functions.getFunctionDownloadUrl(
+            name,
+            codeSecret,
+          );
+          detailResult.DownloadUrl =
+            typeof downloadResult === "string"
+              ? downloadResult
+              : downloadResult.Url;
+        }
+
+        logCloudBaseResult(server.logger, detailResult);
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify(result, null, 2),
+              text: JSON.stringify(detailResult, null, 2),
             },
           ],
         };
       } else {
         throw new Error(`不支持的操作类型: ${action}`);
       }
-    },
-  );
-
-  // getFunctionDownloadUrl - 获取云函数代码下载链接
-  server.registerTool?.(
-    "getFunctionDownloadUrl",
-    {
-      title: "获取云函数代码下载链接",
-      description:
-        "获取指定云函数代码包的临时下载链接，便于拉取当前线上代码进行排查或本地比对。",
-      inputSchema: {
-        name: z.string().describe("函数名称"),
-        codeSecret: z
-          .string()
-          .optional()
-          .describe("代码保护密钥（函数开启代码保护时使用）"),
-      },
-      annotations: {
-        readOnlyHint: true,
-        openWorldHint: true,
-        category: "functions",
-      },
-    },
-    async ({
-      name,
-      codeSecret,
-    }: {
-      name: string;
-      codeSecret?: string;
-    }) => {
-      const cloudbase = await getManager();
-      const result = await cloudbase.functions.getFunctionDownloadUrl(
-        name,
-        codeSecret,
-      );
-      const rawResult = typeof result === "string" ? undefined : result;
-      const downloadUrl =
-        typeof result === "string"
-          ? result
-          : result.Url ?? null;
-
-      logCloudBaseResult(server.logger, {
-        functionName: name,
-        downloadUrl,
-      });
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              {
-                functionName: name,
-                downloadUrl,
-                ...(rawResult ? { raw: rawResult } : {}),
-                nextActions: [
-                  "Use the temporary downloadUrl immediately because it may expire.",
-                  "If you need the zip locally, download it with the existing downloadRemoteFile tool or your local curl/wget command.",
-                ],
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
     },
   );
 

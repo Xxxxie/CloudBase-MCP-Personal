@@ -116,12 +116,11 @@ describe("Function layer tools tests", () => {
 
     // Backward compatibility checks.
     expect(allTools).toContain("createFunction");
-    expect(allTools).toContain("getFunctionDownloadUrl");
     expect(allTools).toContain("getFunctionList");
     expect(allTools).toContain("updateFunctionConfig");
   });
 
-  test("getFunctionDownloadUrl schema is correct", async () => {
+  test("getFunctionList schema includes optional downloadUrl expansion", async () => {
     if (!testClient) {
       console.log("Test client not available, skipping test");
       return;
@@ -129,7 +128,7 @@ describe("Function layer tools tests", () => {
 
     const toolsResult = await testClient.listTools();
     const tool = toolsResult.tools.find(
-      (item) => item.name === "getFunctionDownloadUrl",
+      (item) => item.name === "getFunctionList",
     );
 
     expect(tool).toBeDefined();
@@ -137,7 +136,11 @@ describe("Function layer tools tests", () => {
     expect(tool.inputSchema.type).toBe("object");
 
     const properties = tool.inputSchema.properties;
+    expect(properties.action.enum).toContain("list");
+    expect(properties.action.enum).toContain("detail");
     expect(properties.name).toBeDefined();
+    expect(properties.include).toBeDefined();
+    expect(properties.include.items.enum).toContain("downloadUrl");
     expect(properties.codeSecret).toBeDefined();
     expect(tool.annotations.readOnlyHint).toBe(true);
     expect(tool.annotations.category).toBe("functions");

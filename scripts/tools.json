@@ -494,7 +494,7 @@
     },
     {
       "name": "getFunctionList",
-      "description": "获取云函数列表或单个函数详情。通过 action 参数区分操作类型：list=获取函数列表（默认，无需额外参数），detail=获取函数详情（需要提供 name 参数指定函数名称，返回结果中包含函数当前绑定的 Layers 信息）",
+      "description": "获取云函数列表或单个函数详情。通过 action 参数区分操作类型：list=获取函数列表（默认，无需额外参数），detail=获取函数详情（需要提供 name 参数指定函数名称，并可通过 include 补充返回层信息、代码下载链接等附加字段）",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -504,7 +504,7 @@
               "list",
               "detail"
             ],
-            "description": "操作类型：list=获取函数列表（默认，无需额外参数），detail=获取函数详情（需要提供 name 参数，返回结果中包含当前绑定的 Layers）"
+            "description": "操作类型：list=获取函数列表（默认，无需额外参数），detail=获取函数详情（需要提供 name 参数）"
           },
           "limit": {
             "type": "number",
@@ -518,33 +518,23 @@
             "type": "string",
             "description": "要查询的函数名称。当 action='detail' 时，此参数为必填项，必须提供已存在的函数名称。可通过 action='list' 操作获取可用的函数名称列表"
           },
-          "codeSecret": {
-            "type": "string",
-            "description": "代码保护密钥（detail 操作时使用）"
-          }
-        },
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      }
-    },
-    {
-      "name": "getFunctionDownloadUrl",
-      "description": "获取指定云函数代码包的临时下载链接，便于拉取当前线上代码进行排查或本地比对。",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "函数名称"
+          "include": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "layers",
+                "downloadUrl",
+                "all"
+              ]
+            },
+            "description": "仅 action='detail' 时使用。补充返回字段：layers=显式返回当前绑定的 Layers，downloadUrl=附带代码包临时下载链接，all=返回上述全部补充字段"
           },
           "codeSecret": {
             "type": "string",
-            "description": "代码保护密钥（函数开启代码保护时使用）"
+            "description": "代码保护密钥（detail 和 downloadUrl 补充信息使用）"
           }
         },
-        "required": [
-          "name"
-        ],
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       }
