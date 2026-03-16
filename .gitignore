@@ -8,6 +8,7 @@
 **/package.json.backup
 .skills-repo-output
 .DS_Store
+.idea
 
 # MCP local IDE / rules artifacts
 mcp/.agent/
