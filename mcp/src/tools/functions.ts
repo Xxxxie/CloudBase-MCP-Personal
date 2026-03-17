@@ -170,6 +170,70 @@ function processFunctionRootPath(
   return functionRootPath;
 }
 
+function getExpectedFunctionPath(
+  functionRootPath: string | undefined,
+  functionName: string,
+): string | undefined {
+  if (!functionRootPath) return undefined;
+  return path.join(path.normalize(functionRootPath), functionName);
+}
+
+function buildFunctionOperationErrorMessage(
+  operation: "createFunction" | "updateFunctionCode",
+  functionName: string,
+  functionRootPath: string | undefined,
+  error: unknown,
+): string {
+  const baseMessage = error instanceof Error ? error.message : String(error);
+  const suggestions: string[] = [];
+  const expectedFunctionPath = getExpectedFunctionPath(functionRootPath, functionName);
+
+  if (/GetFunction.*未找到指定的Function|未找到指定的Function/i.test(baseMessage)) {
+    suggestions.push(`请先确认环境中已存在函数 \`${functionName}\`；如果还未创建，请先执行 \`createFunction\`.`);
+  }
+
+  if (/路径不存在/i.test(baseMessage) && expectedFunctionPath) {
+    suggestions.push(
+      `当前工具会从 \`functionRootPath + 函数名\` 查找代码目录，期望目录是 \`${expectedFunctionPath}\`。`,
+    );
+    suggestions.push("如果你传入的已经是函数目录本身，请改为传它的父目录。");
+  }
+
+  if (suggestions.length === 0) {
+    suggestions.push("请检查函数名、目录结构和环境中的函数状态后重试。");
+  }
+
+  return `[${operation}] ${baseMessage}\n建议：${suggestions.join(" ")}`;
+}
+
+function wrapFunctionOperationError(
+  operation: "createFunction" | "updateFunctionCode",
+  functionName: string,
+  functionRootPath: string | undefined,
+  error: unknown,
+): Error {
+  const wrappedError = new Error(
+    buildFunctionOperationErrorMessage(
+      operation,
+      functionName,
+      functionRootPath,
+      error,
+    ),
+  );
+
+  if (error && typeof error === "object") {
+    Object.assign(wrappedError, error);
+  }
+
+  if (error instanceof Error) {
+    wrappedError.name = error.name;
+    wrappedError.stack = error.stack;
+    (wrappedError as Error & { cause?: unknown }).cause = error;
+  }
+
+  return wrappedError;
+}
+
 export function registerFunctionTools(server: ExtendedMcpServer) {
   // 获取 cloudBaseOptions，如果没有则为 undefined
   const cloudBaseOptions = server.cloudBaseOptions;
@@ -435,11 +499,21 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
 
       // 使用闭包中的 cloudBaseOptions
       const cloudbase = await getManager();
-      const result = await cloudbase.functions.createFunction({
-        func,
-        functionRootPath: processedRootPath,
-        force,
-      });
+      let result: unknown;
+      try {
+        result = await cloudbase.functions.createFunction({
+          func,
+          functionRootPath: processedRootPath,
+          force,
+        });
+      } catch (error) {
+        throw wrapFunctionOperationError(
+          "createFunction",
+          func.name,
+          processedRootPath,
+          error,
+        );
+      }
       logCloudBaseResult(server.logger, result);
       return {
         content: [
@@ -510,7 +584,17 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
 
       // 使用闭包中的 cloudBaseOptions
       const cloudbase = await getManager();
-      const result = await cloudbase.functions.updateFunctionCode(updateParams);
+      let result: unknown;
+      try {
+        result = await cloudbase.functions.updateFunctionCode(updateParams);
+      } catch (error) {
+        throw wrapFunctionOperationError(
+          "updateFunctionCode",
+          name,
+          processedRootPath,
+          error,
+        );
+      }
       logCloudBaseResult(server.logger, result);
       return {
         content: [
@@ -894,7 +978,7 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
     {
       title: "查询云函数层信息",
       description:
-        "查询云函数层及函数层配置。通过 action 区分操作：listLayers=查询层列表，listLayerVersions=查询指定层的版本列表，getLayerVersion=查询层版本详情（含下载地址/元信息），getFunctionLayers=查询指定函数当前绑定的层。返回格式：JSON 包含 success、data（含 action 与对应结果字段）、message；data.layers 或 data.layerVersions 为数组，getFunctionLayers 的 data.layers 每项为 { LayerName, LayerVersion }。",
+        "查询云函数层及函数层配置。通过 action 区分操作：listLayers=查询层列表，listLayerVersions=查询指定层的版本列表，getLayerVersion=查询层版本详情（含下载地址/元信息），getFunctionLayers=查询指定函数当前绑定的层。返回格式：JSON 包含 success、data（含 action 与对应结果字段）、message；data.layers 或 data.layerVersions 为数组，getFunctionLayers 的 data.layers 中的每个元素都是一个包含 LayerName 和 LayerVersion 字段的对象（each element in data.layers is an object with LayerName and LayerVersion fields）。",
       inputSchema: {
         action: z
           .enum(READ_FUNCTION_LAYER_ACTIONS)
