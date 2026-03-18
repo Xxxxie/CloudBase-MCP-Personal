@@ -148,7 +148,8 @@ function buildAllInOneTarget(target, destinationDir) {
 }
 
 function buildTargetArtifact(target, outputDir) {
-  const artifactDir = path.join(outputDir, target.key);
+  const artifactRootDir = path.join(outputDir, target.key);
+  const artifactDir = path.join(artifactRootDir, "skills", target.registrySlug);
   ensureDir(artifactDir);
 
   let buildResult;
@@ -166,6 +167,7 @@ function buildTargetArtifact(target, outputDir) {
     targetKey: target.key,
     registrySlug: target.registrySlug,
     displayName: target.displayName || validation.metadata.name,
+    artifactRootDir,
     artifactDir,
     sourceType: target.type,
     sourceDescription: target.sourceDescription,
