@@ -11,9 +11,6 @@ on:
       - 'scripts/update-compat-baseline.mjs'
       - 'scripts/sync-config.mjs'
       - 'package.json'
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   push:
     branches:
       - main
@@ -37,7 +34,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '20'
 
       - name: Verify compatibility surface
         run: npm run check:compat-diff

@@ -10,9 +10,6 @@ on:
   pull_request_review:
     types: [submitted]
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   claude:
     if: |
@@ -34,7 +31,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '18'
       - name: Install @cloudbase/cli
         run: npm install -g @cloudbase/cli
       - name: Run Claude Code

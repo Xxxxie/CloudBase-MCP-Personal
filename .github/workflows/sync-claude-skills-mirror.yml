@@ -10,9 +10,6 @@ on:
       - '.github/workflows/sync-claude-skills-mirror.yml'
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 permissions:
   contents: write
 
@@ -29,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '20'
 
       - name: Sync Claude skills mirror
         run: node scripts/sync-claude-skills-mirror.mjs
