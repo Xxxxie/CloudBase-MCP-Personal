@@ -52,7 +52,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Build publish artifacts
         run: node scripts/build-clawhub-publish-artifacts.mjs --targets "$TARGETS"

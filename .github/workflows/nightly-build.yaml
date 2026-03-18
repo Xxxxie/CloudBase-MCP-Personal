@@ -9,6 +9,9 @@ on:
   # 也支持手动触发
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # 构建和发布到pkg.pr.new
   build-and-publish:
@@ -25,7 +28,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: 'mcp/package-lock.json'
           
@@ -50,4 +53,4 @@ jobs:
       - name: Publish to pkg.pr.new
         run: |
           cd mcp
-          npx pkg-pr-new publish --comment=off 
+          npx pkg-pr-new publish --comment=off
