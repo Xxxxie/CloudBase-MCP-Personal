@@ -126,8 +126,10 @@ function buildSyncCommand(target, options) {
     command: "clawhub",
     args: [
       "sync",
-      "--root",
-      target.artifactDir,
+      "--workdir",
+      target.artifactRootDir,
+      "--dir",
+      "skills",
       "--all",
       "--bump",
       options.bump,

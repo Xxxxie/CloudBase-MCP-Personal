@@ -23,7 +23,15 @@ test('buildClawhubPublishArtifacts builds miniprogram-development artifact', () 
   expect(manifest.targets).toHaveLength(1);
   expect(manifest.targets[0].targetKey).toBe('miniprogram-development');
   expect(
-    fs.existsSync(path.join(outputDir, 'miniprogram-development', 'SKILL.md')),
+    fs.existsSync(
+      path.join(
+        outputDir,
+        'miniprogram-development',
+        'skills',
+        'miniprogram-development',
+        'SKILL.md',
+      ),
+    ),
   ).toBe(true);
   expect(fs.existsSync(path.join(outputDir, 'manifest.json'))).toBe(true);
 });
@@ -39,9 +47,21 @@ test('buildClawhubPublishArtifacts builds all-in-one artifact', () => {
 
   expect(manifest.targets).toHaveLength(1);
   expect(manifest.targets[0].registrySlug).toBe('cloudbase');
-  expect(fs.existsSync(path.join(outputDir, 'all-in-one', 'SKILL.md'))).toBe(true);
   expect(
-    fs.existsSync(path.join(outputDir, 'all-in-one', 'references', 'auth-web', 'SKILL.md')),
+    fs.existsSync(path.join(outputDir, 'all-in-one', 'skills', 'cloudbase', 'SKILL.md')),
+  ).toBe(true);
+  expect(
+    fs.existsSync(
+      path.join(
+        outputDir,
+        'all-in-one',
+        'skills',
+        'cloudbase',
+        'references',
+        'auth-web',
+        'SKILL.md',
+      ),
+    ),
   ).toBe(true);
 });
 
