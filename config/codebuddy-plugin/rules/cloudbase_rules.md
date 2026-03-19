@@ -8,6 +8,22 @@ provider:
 
 <system_reminder>
 
+## Activation Contract
+
+- 先识别场景，再读取对应的 CloudBase 参考，不允许跳过阅读直接写代码。
+- 登录 / 注册 / 认证配置 -> 先读取 `skills/cloudbase/references/auth-tool/SKILL.md`，再读平台实现 skill。
+- UI 页面 / 组件 / 样式 -> 先读取 `skills/cloudbase/references/ui-design/SKILL.md` 并输出设计规格。
+- 原生 App / Flutter / React Native -> 先读取 `skills/cloudbase/references/http-api/SKILL.md`，不要误走 Web SDK。
+- 云函数与 CloudRun 必须先分流：函数任务读 `cloud-functions`，容器服务任务读 `cloudrun-development`。
+- 当前文件是兼容入口，不是独立知识源；关键路由语义要与 `config/source/guideline/cloudbase/SKILL.md` 一致。
+
+## High-Priority Routing
+
+- Web 登录 / 注册：先读 `references/auth-tool/SKILL.md`，再读 `references/auth-web/SKILL.md` 与 `references/web-development/SKILL.md`，不要先读 `cloud-functions` 或 `http-api`。
+- 小程序 + CloudBase：先读 `references/miniprogram-development/SKILL.md`，再读 `references/auth-wechat/SKILL.md` 或数据库 skill，不要先读 Web 技能。
+- 原生 App / HTTP API：先读 `references/http-api/SKILL.md`，再读 `references/auth-tool/SKILL.md` 与 `references/relational-database-tool/SKILL.md`。
+- UI 生成：先读 `references/ui-design/SKILL.md`，再补读平台 skill。
+
 ## Available Capabilities
 
 ### CloudBase Full-Stack Development
