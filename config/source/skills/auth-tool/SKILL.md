@@ -68,6 +68,20 @@ The response contains fields such as:
 - `MfaConfig`
 - `PwdUpdateStrategy`
 
+Before calling `ModifyLoginConfig`, rebuild the payload from writable keys only. Do **not** spread the full response object back into the request.
+
+```js
+const WritableLoginConfig = {
+    "PhoneNumberLogin": LoginConfig.PhoneNumberLogin,
+    "EmailLogin": LoginConfig.EmailLogin,
+    "UserNameLogin": LoginConfig.UserNameLogin,
+    "AnonymousLogin": LoginConfig.AnonymousLogin,
+    ...(LoginConfig.SmsVerificationConfig ? { "SmsVerificationConfig": LoginConfig.SmsVerificationConfig } : {}),
+    ...(LoginConfig.MfaConfig ? { "MfaConfig": LoginConfig.MfaConfig } : {}),
+    ...(LoginConfig.PwdUpdateStrategy ? { "PwdUpdateStrategy": LoginConfig.PwdUpdateStrategy } : {})
+}
+```
+
 ---
 
 ### 2. Anonymous Login
@@ -77,7 +91,7 @@ The response contains fields such as:
 3. Update:
 ```js
 {
-    "params": { "EnvId": `env`, ...LoginConfig, "AnonymousLogin": true },
+    "params": { "EnvId": `env`, ...WritableLoginConfig, "AnonymousLogin": true },
     "service": "tcb",
     "action": "ModifyLoginConfig"
 }
@@ -92,7 +106,7 @@ The response contains fields such as:
 3. Update:
 ```js
 {
-    "params": { "EnvId": `env`, ...LoginConfig, "UserNameLogin": true },
+    "params": { "EnvId": `env`, ...WritableLoginConfig, "UserNameLogin": true },
     "service": "tcb",
     "action": "ModifyLoginConfig"
 }
@@ -120,7 +134,7 @@ The response contains fields such as:
 {
     "params": {
         "EnvId": `env`,
-        ...LoginConfig,
+        ...WritableLoginConfig,
         "PhoneNumberLogin": true,
         "SmsVerificationConfig": {
             "Type": "default",
@@ -137,7 +151,7 @@ The response contains fields such as:
 {
     "params": {
         "EnvId": `env`,
-        ...LoginConfig,
+        ...WritableLoginConfig,
         "PhoneNumberLogin": true,
         "SmsVerificationConfig": {
             "Type": "apis",
@@ -163,7 +177,7 @@ Email has two layers of configuration:
 **Turn on email/password login**:
 ```js
 {
-    "params": { "EnvId": `env`, ...LoginConfig, "EmailLogin": true },
+    "params": { "EnvId": `env`, ...WritableLoginConfig, "EmailLogin": true },
     "service": "tcb",
     "action": "ModifyLoginConfig"
 }
@@ -172,7 +186,7 @@ Email has two layers of configuration:
 **Turn off email/password login**:
 ```js
 {
-    "params": { "EnvId": `env`, ...LoginConfig, "EmailLogin": false },
+    "params": { "EnvId": `env`, ...WritableLoginConfig, "EmailLogin": false },
     "service": "tcb",
     "action": "ModifyLoginConfig"
 }
