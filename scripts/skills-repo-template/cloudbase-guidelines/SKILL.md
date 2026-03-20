@@ -85,13 +85,21 @@ In environments that do not support MCP (e.g. openclaw) or when users are unsure
 You **do not need to hard-code Secret ID / Secret Key / Env ID** in the config.  
 CloudBase MCP will support device-code based login via the `auth` tool, so credentials can be obtained interactively instead of being stored in config.
 
-**Add CloudBase MCP server (recommended):**
+**Add CloudBase MCP server in `config/mcporter.json` (recommended):**
 
-```bash
-npx mcporter config add cloudbase \
-  --command "npx" \
-  --arg "@cloudbase/cloudbase-mcp@latest" \
-  --description "CloudBase MCP"
+If `config/mcporter.json` already contains other MCP servers, keep them and only add the `cloudbase` entry under `mcpServers`.
+
+```json
+{
+  "mcpServers": {
+    "cloudbase": {
+      "command": "npx",
+      "args": ["@cloudbase/cloudbase-mcp@latest"],
+      "description": "CloudBase MCP",
+      "lifecycle": "keep-alive"
+    }
+  }
+}
 ```
 
 **Quick start:**
