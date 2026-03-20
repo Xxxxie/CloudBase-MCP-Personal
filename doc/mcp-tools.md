@@ -654,7 +654,7 @@ API名：storage API介绍：Storage API - 云存储 HTTP API
 <tr><td><code>docName</code></td><td>string</td><td></td><td>mode=doc 时指定。文档名称。 可填写的值: "ai-model-nodejs", "ai-model-web", "ai-model-wechat", "auth-http-api", "auth-nodejs", "auth-tool", "auth-web", "auth-wechat", "cloud-functions", "cloud-storage-web", "cloudbase-platform", "cloudrun-development", "data-model-creation", "http-api", "miniprogram-development", "no-sql-web-sdk", "no-sql-wx-mp-sdk", "relational-database-tool", "relational-database-web", "spec-workflow", "ui-design", "web-development"</td></tr>
 <tr><td><code>apiName</code></td><td>string</td><td></td><td>mode=openapi 时指定。API 名称。 可填写的值: "mysqldb", "functions", "auth", "cloudrun", "storage"</td></tr>
 <tr><td><code>threshold</code></td><td>number</td><td></td><td>mode=vector 时指定。相似性检索阈值 默认值: 0.5</td></tr>
-<tr><td><code>id</code></td><td>string</td><td></td><td>mode=vector 时指定。知识库范围，cloudbase=云开发全量知识，scf=云开发的云函数知识, miniprogram=小程序知识（不包含云开发与云函数知识） 可填写的值: "cloudbase", "scf", "miniprogram"</td></tr>
+<tr><td><code>id</code></td><td>string</td><td></td><td>mode=vector 时可选。知识库范围，默认值: <code>cloudbase</code>。cloudbase=云开发全量知识，scf=云开发的云函数知识, miniprogram=小程序知识（不包含云开发与云函数知识） 可填写的值: "cloudbase", "scf", "miniprogram"</td></tr>
 <tr><td><code>content</code></td><td>string</td><td></td><td>mode=vector 时指定。检索内容</td></tr>
 <tr><td><code>options</code></td><td>object</td><td></td><td>mode=vector 时指定。其他选项</td></tr>
 <tr><td><code>options.chunkExpand</code></td><td>array of number</td><td></td><td>指定返回的文档内容的展开长度,例如 [3,3]代表前后展开长度 默认值: [3,3]</td></tr>
