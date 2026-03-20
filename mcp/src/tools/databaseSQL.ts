@@ -234,13 +234,34 @@ function pickProgress(result: Record<string, unknown>) {
 function pickClusterDetail(result: Record<string, unknown>) {
   const candidate =
     result.ClusterDetail ??
-    (result.Data as Record<string, unknown> | undefined)?.ClusterDetail;
+    (result.Data as Record<string, unknown> | undefined);
 
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
     return undefined;
   }
 
   return candidate as Record<string, unknown>;
+}
+
+function buildTaskRequest(
+  request: Record<string, unknown> | undefined,
+  result: Record<string, unknown>,
+) {
+  const data = pickDataPayload(result);
+  const taskId =
+    (data?.TaskId as string | undefined) ??
+    (result.TaskId as string | undefined) ??
+    (request?.TaskId as string | undefined);
+  const taskName =
+    (data?.TaskName as string | undefined) ??
+    (result.TaskName as string | undefined) ??
+    (request?.TaskName as string | undefined);
+
+  return {
+    ...(request || {}),
+    ...(taskId ? { TaskId: taskId } : {}),
+    ...(taskName ? { TaskName: taskName } : {}),
+  };
 }
 
 function extractErrorCode(error: unknown) {
@@ -407,15 +428,25 @@ async function getSqlInstanceInfo({
     logCloudBaseResult(server.logger, clusterResult);
 
     const clusterDetail = pickClusterDetail(clusterResult);
+    const dbInfo =
+      clusterDetail?.DbInfo &&
+      typeof clusterDetail.DbInfo === "object" &&
+      !Array.isArray(clusterDetail.DbInfo)
+        ? (clusterDetail.DbInfo as Record<string, unknown>)
+        : undefined;
     const clusterId =
-      typeof clusterDetail?.ClusterId === "string"
-        ? clusterDetail.ClusterId
+      typeof clusterDetail?.DbClusterId === "string"
+        ? clusterDetail.DbClusterId
+        : typeof clusterDetail?.ClusterId === "string"
+          ? clusterDetail.ClusterId
         : undefined;
     const instanceId =
       typeof clusterDetail?.InstanceId === "string"
         ? clusterDetail.InstanceId
-        : clusterId || "default";
+        : "default";
     const rawStatusSource =
+      dbInfo?.ClusterStatus ??
+      dbInfo?.Status ??
       clusterDetail?.ClusterStatus ??
       clusterDetail?.Status ??
       pickLifecycleSource(clusterResult) ??
@@ -528,6 +559,7 @@ async function handleRunQuery(
   const result = await callSqlControlPlane(cloudbase, "RunSql", {
     EnvId: dbContext.envId,
     Sql: args.sql,
+    ReadOnly: true,
     DbInstance: {
       EnvId: dbContext.envId,
       InstanceId: dbContext.instanceId,
@@ -580,7 +612,7 @@ async function handleDescribeCreateResult(
           "default",
       },
       task: {
-        request,
+        request: buildTaskRequest(request, result),
         requestId: result.RequestId,
       },
       progress: pickProgress(result),
@@ -591,7 +623,7 @@ async function handleDescribeCreateResult(
         : status === "FAILED"
           ? "MySQL provisioning failed. Review the returned status and task details before retrying."
           : "MySQL provisioning has not completed yet.",
-    nextActions: buildProvisionNextActions(status, request),
+    nextActions: buildProvisionNextActions(status, buildTaskRequest(request, result)),
   });
 }
 
@@ -704,6 +736,7 @@ async function handleProvisionMySQL(
   const envId = await getEnvId(context.cloudBaseOptions);
   const request = args.request || {};
   const result = await callSqlControlPlane(cloudbase, "CreateMySQL", {
+    DbInstanceType: "MYSQL",
     ...request,
     EnvId: envId,
   });
@@ -711,6 +744,8 @@ async function handleProvisionMySQL(
 
   const rawStatus = pickLifecycleSource(result);
   const status = normalizeTaskStatus(rawStatus);
+
+  const taskRequest = buildTaskRequest(request, result);
 
   return buildSqlToolResult({
     success: true,
@@ -725,7 +760,7 @@ async function handleProvisionMySQL(
           "default",
       },
       task: {
-        request,
+        request: taskRequest,
         requestId: result.RequestId,
       },
     },
@@ -733,7 +768,7 @@ async function handleProvisionMySQL(
       status === "READY"
         ? "MySQL provisioning completed immediately."
         : "MySQL provisioning request submitted successfully.",
-    nextActions: buildProvisionNextActions(status, request),
+    nextActions: buildProvisionNextActions(status, taskRequest),
   });
 }
 

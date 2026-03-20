@@ -104,6 +104,31 @@ describe("SQL database tools", () => {
     expect(mockCommonServiceCall).not.toHaveBeenCalled();
   });
 
+  it("querySqlDatabase(runQuery) sends ReadOnly to RunSql", async () => {
+    const { tools } = createMockServer();
+
+    await tools.querySqlDatabase.handler({
+      action: "runQuery",
+      sql: "SELECT 1",
+    });
+
+    expect(mockCommonServiceCall).toHaveBeenCalledWith(
+      expect.objectContaining({
+        Action: "RunSql",
+        Param: expect.objectContaining({
+          EnvId: "env-test",
+          Sql: "SELECT 1",
+          ReadOnly: true,
+          DbInstance: expect.objectContaining({
+            EnvId: "env-test",
+            InstanceId: "default",
+            Schema: "env-test",
+          }),
+        }),
+      }),
+    );
+  });
+
   it("manageSqlDatabase(provisionMySQL) requires explicit confirmation", async () => {
     const { tools } = createMockServer();
 
@@ -216,6 +241,65 @@ describe("SQL database tools", () => {
     });
   });
 
+  it("manageSqlDatabase(provisionMySQL) sends DbInstanceType and carries TaskId forward", async () => {
+    mockCommonServiceCall.mockImplementation(async ({ Action }: { Action: string }) => {
+      if (Action === "DescribeCreateMySQLResult") {
+        return {
+          RequestId: "req-create",
+          Data: {
+            Status: "notexist",
+          },
+        };
+      }
+      if (Action === "CreateMySQL") {
+        return {
+          RequestId: "req-provision",
+          Data: {
+            TaskId: "38661",
+          },
+        };
+      }
+      throw new Error(`unexpected action: ${Action}`);
+    });
+
+    const { tools } = createMockServer();
+    const result = await tools.manageSqlDatabase.handler({
+      action: "provisionMySQL",
+      confirm: true,
+    });
+    const payload = JSON.parse(result.content[0].text);
+
+    expect(mockCommonServiceCall).toHaveBeenCalledWith(
+      expect.objectContaining({
+        Action: "CreateMySQL",
+        Param: expect.objectContaining({
+          EnvId: "env-test",
+          DbInstanceType: "MYSQL",
+        }),
+      }),
+    );
+    expect(payload).toMatchObject({
+      success: true,
+      data: {
+        task: {
+          request: {
+            TaskId: "38661",
+          },
+        },
+      },
+    });
+    expect(payload.nextActions?.[0]).toMatchObject({
+      tool: "querySqlDatabase",
+      action: "describeTaskStatus",
+      suggested_args: {
+        action: "describeTaskStatus",
+        request: {
+          TaskId: "38661",
+        },
+      },
+    });
+  });
+
   it("querySqlDatabase(getInstanceInfo) uses cluster detail after create result succeeds", async () => {
     mockCommonServiceCall.mockImplementation(async ({ Action }: { Action: string }) => {
       if (Action === "DescribeCreateMySQLResult") {
@@ -229,9 +313,11 @@ describe("SQL database tools", () => {
       if (Action === "DescribeMySQLClusterDetail") {
         return {
           RequestId: "req-cluster",
-          ClusterDetail: {
-            ClusterId: "cluster-1",
-            ClusterStatus: "RUNNING",
+          Data: {
+            DbClusterId: "cluster-1",
+            DbInfo: {
+              ClusterStatus: "running",
+            },
           },
         };
       }
@@ -251,6 +337,7 @@ describe("SQL database tools", () => {
       data: {
         exists: true,
         clusterId: "cluster-1",
+        instanceId: "default",
         status: "READY",
       },
     });
