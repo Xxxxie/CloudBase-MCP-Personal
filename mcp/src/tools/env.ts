@@ -813,11 +813,27 @@ export function registerEnvTools(server: ExtendedMcpServer) {
             logCloudBaseResult(server.logger, result);
             break;
 
-          case "hosting":
+          case "hosting": {
             const cloudbaseHosting = await getManager();
-            result = await cloudbaseHosting.hosting.getWebsiteConfig();
-            logCloudBaseResult(server.logger, result);
+            const websiteConfig = await cloudbaseHosting.hosting.getWebsiteConfig();
+            logCloudBaseResult(server.logger, websiteConfig);
+
+            // Also fetch env info to get CdnDomain and Bucket
+            const envInfo = await cloudbaseHosting.env.getEnvInfo() as {
+              EnvInfo?: {
+                StaticStorages?: Array<{ StaticDomain?: string }>;
+                Storages?: Array<{ Bucket?: string }>;
+              };
+            };
+            logCloudBaseResult(server.logger, envInfo);
+
+            result = {
+              ...websiteConfig,
+              CdnDomain: envInfo.EnvInfo?.StaticStorages?.[0]?.StaticDomain || null,
+              Bucket: envInfo.EnvInfo?.Storages?.[0]?.Bucket || null,
+            };
             break;
+          }
 
           default:
             throw new Error(`不支持的查询类型: ${action}`);
