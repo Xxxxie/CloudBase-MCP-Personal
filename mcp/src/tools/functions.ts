@@ -9,6 +9,7 @@ import { isCloudMode } from "../utils/cloud-mode.js";
 import { debug } from "../utils/logger.js";
 
 import { IEnvVariable } from "@cloudbase/manager-node/types/function/types.js";
+import { existsSync } from "fs";
 import path from "path";
 
 export const SUPPORTED_RUNTIMES = {
@@ -306,7 +307,18 @@ function getExpectedFunctionPath(
   return path.join(path.normalize(functionRootPath), functionName);
 }
 
-function buildFunctionOperationErrorMessage(
+export function shouldInstallDependencyForFunction(
+  functionType: string | undefined,
+  hasPackageJson: boolean,
+): boolean {
+  if (functionType === "HTTP") {
+    return hasPackageJson;
+  }
+
+  return true;
+}
+
+export function buildFunctionOperationErrorMessage(
   operation: "createFunction" | "updateFunctionCode",
   functionName: string,
   functionRootPath: string | undefined,
@@ -327,6 +339,21 @@ function buildFunctionOperationErrorMessage(
       `当前工具会从 \`functionRootPath + 函数名\` 查找代码目录，期望目录是 \`${expectedFunctionPath}\`。`,
     );
     suggestions.push("如果你传入的已经是函数目录本身，请改为传它的父目录。");
+  }
+
+  if (/paths\[0\].*undefined/i.test(baseMessage)) {
+    suggestions.push(
+      "HTTP 函数创建时需要提供 functionRootPath（指向 cloudfunctions 父目录）或 zipFile，否则 SDK 无法定位函数目录。",
+    );
+  }
+
+  if (/依赖安装失败|package\.json/i.test(baseMessage)) {
+    suggestions.push(
+      "如果 HTTP 函数只使用原生 Node.js API 且没有第三方依赖，可以保留函数目录中的 index.js 和 scf_bootstrap，工具会跳过依赖安装。",
+    );
+    suggestions.push(
+      "如果你确实依赖 npm 包，请在函数目录下补充 package.json 后重试。",
+    );
   }
 
   if (suggestions.length === 0) {
@@ -827,11 +854,36 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
         }
       }
 
-      func.installDependency = true;
       const processedRootPath = processFunctionRootPath(
         input.functionRootPath,
         functionName,
       );
+      const functionType =
+        typeof func.type === "string" ? func.type : undefined;
+      const expectedFunctionPath = getExpectedFunctionPath(
+        processedRootPath,
+        functionName,
+      );
+
+      if (functionType === "HTTP" && !processedRootPath && !input.zipFile) {
+        throw new Error(
+          "createFunction 创建 HTTP 函数时，需要提供 functionRootPath（指向 cloudfunctions 父目录）或 zipFile。",
+        );
+      }
+
+      const hasPackageJson =
+        expectedFunctionPath !== undefined
+          ? existsSync(path.join(expectedFunctionPath, "package.json"))
+          : false;
+      func.installDependency = input.zipFile
+        ? true
+        : shouldInstallDependencyForFunction(functionType, hasPackageJson);
+
+      if (functionType === "HTTP" && processedRootPath && !hasPackageJson) {
+        console.warn(
+          `检测到 HTTP 函数 ${functionName} 目录下没有 package.json，已跳过依赖安装；如果你需要第三方依赖，请补充 package.json 后重试。`,
+        );
+      }
 
       let result: unknown;
       try {
@@ -875,6 +927,7 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
             name: functionName,
             path: accessPath,
             type: 6 as 1 | 2,
+            auth: false,
           });
           logCloudBaseResult(server.logger, accessResult);
           nextActions.push({
@@ -897,7 +950,7 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
             tool: "manageGateway",
             action: "createAccess",
             reason:
-              "HTTP 函数需要创建 HTTP 触发路径才能通过 URL 访问，请手动创建访问路径",
+              "HTTP 函数需要创建 HTTP 触发路径才能通过 URL 访问，请手动创建访问路径并显式传入 auth=false 以允许匿名访问",
           });
         }
       }
@@ -905,7 +958,7 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
       const message =
         func.type === "HTTP"
           ? accessError
-            ? `已创建 HTTP 函数 ${functionName}，但自动创建 HTTP 访问路径失败（${accessError}），请手动调用 manageGateway(action="createAccess") 创建访问路径`
+            ? `已创建 HTTP 函数 ${functionName}，但自动创建 HTTP 访问路径失败（${accessError}），请手动调用 manageGateway(action="createAccess", auth=false) 创建访问路径`
             : `已创建 HTTP 函数 ${functionName} 并自动创建了 HTTP 访问路径 /${functionName}。注意：HTTP 函数默认安全规则不允许匿名访问，如果外部调用返回 EXCEED_AUTHORITY 错误，请调用 writeSecurityRule(resourceType="function", aclTag="CUSTOM", rule="true") 放开函数的访问权限。`
           : `已创建函数 ${functionName}`;
 
