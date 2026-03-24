@@ -59,7 +59,7 @@ export function registerSecurityRuleTools(server: ExtendedMcpServer) {
     READ_SECURITY_RULE,
     {
       title: "读取安全规则",
-      description: `读取指定资源（noSQL 数据库、SQL 数据库、云函数、存储桶）的安全规则和权限类别。`,
+      description: `读取指定资源（noSQL 数据库、SQL 数据库、云函数、存储桶）的安全规则和权限类别。\n\n安全规则文档：\n- 云函数安全规则：https://docs.cloudbase.net/cloud-function/security-rules\n- 存储安全规则：https://docs.cloudbase.net/storage/security-rules\n- 文档型数据库安全规则：https://docs.cloudbase.net/database/security-rules`,
       inputSchema: {
         resourceType: z
           .enum(["noSqlDatabase", "sqlDatabase", "function", "storage"])
@@ -155,7 +155,7 @@ export function registerSecurityRuleTools(server: ExtendedMcpServer) {
     WRITE_SECURITY_RULE,
     {
       title: "写入安全规则",
-      description: `设置指定资源（数据库集合、云函数、存储桶）的安全规则。`,
+      description: `设置指定资源（数据库集合、云函数、存储桶）的安全规则。\n\n安全规则文档：\n- 云函数安全规则：https://docs.cloudbase.net/cloud-function/security-rules\n- 存储安全规则：https://docs.cloudbase.net/storage/security-rules\n- 数据库安全规则：https://docs.cloudbase.net/database/security-rules\n\n云函数安全规则仅支持 aclTag="CUSTOM"，rule 字段为 JSON 字符串。例如放开所有访问可设置 rule="true"。`,
       inputSchema: {
         resourceType: z
           .enum(["sqlDatabase", "noSqlDatabase", "function", "storage"])
