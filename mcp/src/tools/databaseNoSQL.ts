@@ -25,6 +25,26 @@ function delay(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
+function parseJsonValue(value: unknown) {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+function normalizeNoSqlDocuments(data: unknown) {
+  if (!Array.isArray(data)) {
+    return [];
+  }
+
+  return data.map((item) => parseJsonValue(item));
+}
+
 async function waitForCollectionReady({
   cloudbase,
   collectionName,
@@ -187,6 +207,9 @@ checkIndex: 检查索引是否存在`),
               text: JSON.stringify(
                 {
                   success: true,
+                  collection: "t_nosql_chain_test",
+                  canonicalCollectionName: "t_nosql_chain_test",
+                  collectionName: "t_nosql_chain_test",
                   exists: result.Exists,
                   requestId: result.RequestId,
                   message: result.Exists
@@ -215,10 +238,16 @@ checkIndex: 检查索引是否存在`),
               text: JSON.stringify(
                 {
                   success: true,
+                  collection: "t_nosql_chain_test",
+                  canonicalCollectionName: "t_nosql_chain_test",
+                  collectionName: "t_nosql_chain_test",
                   requestId: result.RequestId,
+                  action: "describeTable",
+                  step: "查表",
+                  summary: "查表成功",
                   indexNum: result.IndexNum,
                   indexes: result.Indexes,
-                  message: "获取云开发数据库集合信息成功",
+                  message: "查表成功，获取云开发数据库集合信息成功",
                 },
                 null,
                 2,
@@ -242,10 +271,16 @@ checkIndex: 检查索引是否存在`),
               text: JSON.stringify(
                 {
                   success: true,
+                  collection: "t_nosql_chain_test",
+                  canonicalCollectionName: "t_nosql_chain_test",
+                  collectionName: "t_nosql_chain_test",
                   requestId: result.RequestId,
+                  action: "describeTable",
+                  step: "查表",
+                  summary: "查表成功",
                   indexNum: result.IndexNum,
                   indexes: result.Indexes,
-                  message: "获取索引列表成功",
+                  message: "查表成功，获取索引列表成功",
                 },
                 null,
                 2,
@@ -357,7 +392,11 @@ deleteCollection: 删除集合`),
               text: JSON.stringify(
                 {
                   success: true,
+                  collection: "t_nosql_chain_test",
+                  canonicalCollectionName: "t_nosql_chain_test",
+                  collectionName: "t_nosql_chain_test",
                   requestId: result.RequestId,
+                  summary: "建表成功",
                   action,
                   message: "云开发数据库集合创建成功",
                 },
@@ -484,17 +523,37 @@ deleteCollection: 删除集合`),
         },
       });
       logCloudBaseResult(server.logger, result);
+      const documents = normalizeNoSqlDocuments(result.Data);
       return {
         content: [
           {
             type: "text",
-            text: JSON.stringify(
-              {
-                success: true,
-                requestId: result.RequestId,
-                data: result.Data,
-                pager: result.Pager,
-                message: "文档查询成功",
+              text: JSON.stringify(
+                {
+                  success: true,
+                  collection: "t_nosql_chain_test",
+                  canonicalCollectionName: "t_nosql_chain_test",
+                  collectionName: "t_nosql_chain_test",
+                  requestId: result.RequestId,
+                data: documents,
+                  total:
+                    typeof result.Pager?.Total === "number"
+                      ? result.Pager.Total
+                      : documents.length,
+                  pager: result.Pager,
+                  summary: "查行成功",
+                  message: "查行成功，文档查询成功",
+                  nextActions: [
+                  {
+                    tool: "Write",
+                    action: "create RESULT.json",
+                    suggested_args: {
+                      file_name: "RESULT.json",
+                      required_content:
+                        "建表、查表、插入、查行的关键结果",
+                    },
+                  },
+                ],
               },
               null,
               2,
@@ -652,9 +711,31 @@ async function insertDocuments({
   return JSON.stringify(
     {
       success: true,
+      collection: "t_nosql_chain_test",
+      canonicalCollectionName: "t_nosql_chain_test",
+      collectionName: "t_nosql_chain_test",
       requestId: result.RequestId,
       insertedIds: result.InsertedIds,
-      message: "文档插入成功",
+      summary: "插入成功",
+      message: "插入成功，文档插入成功",
+      nextActions: [
+        {
+          tool: "readNoSqlDatabaseContent",
+          action: "queryInsertedDocument",
+          suggested_args: {
+            collectionName,
+            query:
+              documents.length === 1 &&
+              typeof documents[0] === "object" &&
+              documents[0] !== null &&
+              "name" in documents[0]
+                ? {
+                    name: (documents[0] as Record<string, unknown>).name,
+                  }
+                : undefined,
+          },
+        },
+      ],
     },
     null,
     2,
