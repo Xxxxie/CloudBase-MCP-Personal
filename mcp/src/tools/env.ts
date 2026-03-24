@@ -81,13 +81,20 @@ function selectEnvFields(env: Record<string, any>, fields?: EnvFieldName[]) {
   return simplified;
 }
 
-function filterEnvList(envList: Record<string, any>[], filters: { alias?: string; envId?: string }) {
+function filterEnvList(
+  envList: Record<string, any>[],
+  filters: { alias?: string; aliasExact?: boolean; envId?: string },
+) {
   const alias = filters.alias?.trim().toLowerCase();
+  const aliasExact = filters.aliasExact === true;
   const envId = filters.envId?.trim().toLowerCase();
 
   return envList.filter((env) => {
+    const normalizedAlias = String(env.Alias ?? "").toLowerCase();
     const matchesAlias = alias
-      ? String(env.Alias ?? "").toLowerCase().includes(alias)
+      ? aliasExact
+        ? normalizedAlias === alias
+        : normalizedAlias.includes(alias)
       : true;
     const matchesEnvId = envId
       ? String(env.EnvId ?? "").toLowerCase() === envId
@@ -216,12 +223,13 @@ function buildEnvQueryListResult(params: {
   result: any;
   cloudBaseOptions: any;
   hasEnvId: boolean;
-  filters: {
-    alias?: string;
-    envId?: string;
-    limit?: number;
-    offset?: number;
-    fields?: EnvFieldName[];
+    filters: {
+      alias?: string;
+      aliasExact?: boolean;
+      envId?: string;
+      limit?: number;
+      offset?: number;
+      fields?: EnvFieldName[];
   };
 }) {
   const envList = Array.isArray(params.result?.EnvList) ? params.result.EnvList : [];
@@ -232,6 +240,7 @@ function buildEnvQueryListResult(params: {
     : envList;
   const filteredList = filterEnvList(baseList, {
     alias: params.filters.alias,
+    aliasExact: params.filters.aliasExact,
     envId: params.filters.envId,
   });
   const paginated = paginateEnvList(filteredList, params.filters.offset, params.filters.limit);
@@ -244,6 +253,7 @@ function buildEnvQueryListResult(params: {
     HasMore: paginated.offset + paginated.items.length < paginated.total,
     AppliedFilters: {
       alias: params.filters.alias ?? null,
+      aliasExact: params.filters.aliasExact ?? null,
       envId: params.filters.envId ?? null,
       fields: params.filters.fields ?? [...DEFAULT_ENV_FIELDS],
       currentEnvOnly: shouldRestrictToCurrentEnv,
@@ -686,7 +696,7 @@ export function registerEnvTools(server: ExtendedMcpServer) {
     {
       title: "环境查询",
       description:
-        "查询云开发环境相关信息，支持查询环境列表、当前环境信息、安全域名和静态网站托管配置。（原工具名：listEnvs/getEnvInfo/getEnvAuthDomains/getWebsiteConfig，为兼容旧AI规则可继续使用这些名称）当 action=list 时，标准返回字段为 EnvId、Alias、Status、EnvType、Region、PackageName、IsDefault，并支持通过 fields 白名单裁剪这些字段。当前 MCP 输出不支持套餐/计划到期时间（expiry / expire time）查询。",
+        "查询云开发环境相关信息，支持查询环境列表、当前环境信息、安全域名和静态网站托管配置。（原工具名：listEnvs/getEnvInfo/getEnvAuthDomains/getWebsiteConfig，为兼容旧AI规则可继续使用这些名称）当 action=list 时，标准返回字段为 EnvId、Alias、Status、EnvType、Region、PackageName、IsDefault，并支持通过 fields 白名单裁剪这些字段；aliasExact=true 时会按别名精确筛选，避免把前缀相近的环境误当作候选。当前 MCP 输出不支持套餐/计划到期时间（expiry / expire time）查询。",
       inputSchema: {
         action: z
           .enum(["list", "info", "domains", "hosting"])
@@ -694,6 +704,7 @@ export function registerEnvTools(server: ExtendedMcpServer) {
             "查询类型：list=环境列表（标准字段：EnvId、Alias、Status、EnvType、Region、PackageName、IsDefault；不支持 expiry），info=当前环境信息，domains=安全域名列表，hosting=静态网站托管配置",
           ),
         alias: z.string().optional().describe("按环境别名筛选。action=list 时可选"),
+        aliasExact: z.boolean().optional().describe("按环境别名精确筛选。action=list 时可选；与 alias 配合使用"),
         envId: z.string().optional().describe("按环境 ID 精确筛选。action=list 时可选"),
         limit: z.number().int().positive().optional().describe("返回数量上限。action=list 时可选"),
         offset: z.number().int().min(0).optional().describe("分页偏移。action=list 时可选"),
@@ -711,6 +722,7 @@ export function registerEnvTools(server: ExtendedMcpServer) {
     async ({
       action,
       alias,
+      aliasExact,
       envId,
       limit,
       offset,
@@ -718,6 +730,7 @@ export function registerEnvTools(server: ExtendedMcpServer) {
     }: {
       action: "list" | "info" | "domains" | "hosting";
       alias?: string;
+      aliasExact?: boolean;
       envId?: string;
       limit?: number;
       offset?: number;
@@ -793,6 +806,7 @@ export function registerEnvTools(server: ExtendedMcpServer) {
               hasEnvId,
               filters: {
                 alias,
+                aliasExact,
                 envId,
                 limit,
                 offset,
