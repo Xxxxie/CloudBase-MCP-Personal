@@ -128,7 +128,7 @@ When your IDE does not support native MCP, use **mcporter** as the CLI to config
 
 ## Pricing & Free Trial
 
-每个云开发账号可创建 1 个免费体验环境（3000 资源点/月），详见 [CloudBase 计费概述](https://cloud.tencent.com/document/product/876/75213)。
+Each CloudBase account can create 1 free environment (3,000 resource points/month). For plans, quotas, and overage details, see [CloudBase Pricing](https://cloud.tencent.com/document/product/876/75213).
 
 ---
 
