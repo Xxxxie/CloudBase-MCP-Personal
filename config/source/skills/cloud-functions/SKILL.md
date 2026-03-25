@@ -28,6 +28,8 @@ alwaysApply: false
 ### Common mistakes / gotchas
 
 - Picking the wrong function type and trying to compensate later.
+- Mixing Event Function code shape (`exports.main(event, context)`) with HTTP Function code shape (`req` / `res` on port 9000).
+- Treating HTTP Access as the implementation model for HTTP Functions. HTTP Access is a gateway configuration for Event Functions, not the HTTP Function runtime model.
 - Forgetting that runtime cannot be changed after creation.
 - Using cloud functions as the first solution for Web login.
 
@@ -41,6 +43,12 @@ Use this skill when developing, deploying, and managing CloudBase cloud function
 
 - **Event Functions (普通云函数)**: Traditional serverless functions triggered by events (SDK calls, timers)
 - **HTTP Functions (HTTP 云函数)**: Web service functions triggered by HTTP requests, supporting multiple languages
+
+### Writing mode at a glance
+
+- If the request is for a normal CloudBase function triggered by SDK calls, timers, or other events, write an **Event Function** with `exports.main = async (event, context) => {}`.
+- If the request is for an HTTP endpoint, REST API, SSE, or WebSocket service, write an **HTTP Function** that listens on port `9000` and handles `req` / `res`.
+- If the user mentions HTTP access for an existing Event Function, keep the Event Function code shape and add gateway access separately.
 
 ## When to use this skill
 
@@ -64,6 +72,7 @@ Use this skill for **cloud function operations** when you need to:
 1. **Choose the right function type**
    - **Event Function**: For SDK calls, scheduled tasks, event-driven scenarios
    - **HTTP Function**: For Web APIs, REST services, SSE/WebSocket, multi-language support
+   - If the prompt says "HTTP 云函数", use the HTTP Function model first; if it says "触发器云函数" or omits HTTP, default to the Event Function model.
 
 2. **Understand runtime limitations**
    - Runtime **CANNOT be changed** after function creation
@@ -73,7 +82,9 @@ Use this skill for **cloud function operations** when you need to:
 3. **Deploy functions correctly**
    - **Preferred MCP Tools**: Use `queryFunctions` for reads, `manageFunctions(action="createFunction")` for creation, and `manageFunctions(action="updateFunctionCode")` for code deployment
    - **Legacy compatibility**: If older prompts mention `createFunction` / `updateFunctionCode`, map them to the `manageFunctions` actions above
-   - **CLI**: Use `tcb fn deploy` (Event) or `tcb fn deploy --httpFn` (HTTP)
+   - **CLI**: Use `tcb fn deploy` (Event) or `tcb fn deploy --httpFn` (HTTP) only as a fallback when MCP tools are unavailable
+   - In agent / non-interactive runs, never default to CLI login flows for deployment; keep the flow on `manageFunctions`
+   - For HTTP functions, create or update them through `manageFunctions` with `func.type="HTTP"` as the primary path
    - HTTP Functions require `scf_bootstrap` file in the function directory
    - Provide correct `functionRootPath` (parent directory of function folder)
 
@@ -190,6 +201,12 @@ Use `manageFunctions(action="updateFunctionCode")`:
 ### HTTP Function Overview
 
 HTTP Functions are optimized for Web service scenarios, supporting standard HTTP request/response patterns.
+
+**HTTP Function coding model**
+- Use a web-server style handler with `req` / `res`
+- Parse query, headers, and body from the HTTP request directly
+- Return HTTP status codes and response bodies explicitly
+- Do not use `exports.main(event, context)` as the primary HTTP Function shape
 
 **Key Characteristics:**
 - **Must listen on port 9000** (platform requirement)
@@ -451,6 +468,7 @@ Use CloudBase HTTP API to invoke event functions:
 
 - **HTTP API**: Uses CloudBase API endpoint with authentication token
 - **HTTP Access**: Creates direct HTTP/HTTPS endpoint for standard REST API access without SDK
+- **Important**: This section applies to Event Functions only. It does not change an HTTP Function into an Event Function or vice versa.
 
 **Creating HTTP Access:**
 
