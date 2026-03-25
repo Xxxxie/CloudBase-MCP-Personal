@@ -25,6 +25,38 @@ function delay(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
+function parseNoSqlDocument(value: unknown) {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return parsed !== null && typeof parsed === "object" ? parsed : value;
+  } catch {
+    return value;
+  }
+}
+
+function normalizeNoSqlDocuments(data: unknown) {
+  if (!Array.isArray(data)) {
+    return [];
+  }
+
+  return data.map((item) => parseNoSqlDocument(item));
+}
+
+function withCollectionName<T extends Record<string, unknown>>(
+  collectionName: string,
+  payload: T,
+) {
+  return {
+    ...payload,
+    collection: collectionName,
+    collectionName,
+  };
+}
+
 async function waitForCollectionReady({
   cloudbase,
   collectionName,
@@ -185,14 +217,14 @@ checkIndex: 检查索引是否存在`),
             {
               type: "text",
               text: JSON.stringify(
-                {
+                withCollectionName(collectionName, {
                   success: true,
                   exists: result.Exists,
                   requestId: result.RequestId,
                   message: result.Exists
                     ? "云开发数据库集合已存在"
                     : "云开发数据库集合不存在",
-                },
+                }),
                 null,
                 2,
               ),
@@ -213,13 +245,13 @@ checkIndex: 检查索引是否存在`),
             {
               type: "text",
               text: JSON.stringify(
-                {
+                withCollectionName(collectionName, {
                   success: true,
                   requestId: result.RequestId,
                   indexNum: result.IndexNum,
                   indexes: result.Indexes,
                   message: "获取云开发数据库集合信息成功",
-                },
+                }),
                 null,
                 2,
               ),
@@ -240,13 +272,13 @@ checkIndex: 检查索引是否存在`),
             {
               type: "text",
               text: JSON.stringify(
-                {
+                withCollectionName(collectionName, {
                   success: true,
                   requestId: result.RequestId,
                   indexNum: result.IndexNum,
                   indexes: result.Indexes,
                   message: "获取索引列表成功",
-                },
+                }),
                 null,
                 2,
               ),
@@ -269,12 +301,13 @@ checkIndex: 检查索引是否存在`),
             {
               type: "text",
               text: JSON.stringify(
-                {
+                withCollectionName(collectionName, {
                   success: true,
+                  indexName,
                   exists: result.Exists,
                   requestId: result.RequestId,
                   message: result.Exists ? "索引已存在" : "索引不存在",
-                },
+                }),
                 null,
                 2,
               ),
@@ -355,12 +388,12 @@ deleteCollection: 删除集合`),
             {
               type: "text",
               text: JSON.stringify(
-                {
+                withCollectionName(collectionName, {
                   success: true,
                   requestId: result.RequestId,
                   action,
                   message: "云开发数据库集合创建成功",
-                },
+                }),
                 null,
                 2,
               ),
@@ -383,12 +416,12 @@ deleteCollection: 删除集合`),
             {
               type: "text",
               text: JSON.stringify(
-                {
+                withCollectionName(collectionName, {
                   success: true,
                   requestId: result.RequestId,
                   action,
                   message: "云开发数据库集合更新成功",
-                },
+                }),
                 null,
                 2,
               ),
@@ -401,13 +434,16 @@ deleteCollection: 删除集合`),
         const result =
           await cloudbase.database.deleteCollection(collectionName);
         logCloudBaseResult(server.logger, result);
-        const body: Record<string, unknown> = {
-          success: true,
-          requestId: result.RequestId,
-          action,
-          message:
-            result.Exists === false ? "集合不存在" : "云开发数据库集合删除成功",
-        };
+        const body: Record<string, unknown> = withCollectionName(
+          collectionName,
+          {
+            success: true,
+            requestId: result.RequestId,
+            action,
+            message:
+              result.Exists === false ? "集合不存在" : "云开发数据库集合删除成功",
+          },
+        );
         if (result.Exists === false) {
           body.exists = false;
         }
@@ -484,18 +520,23 @@ deleteCollection: 删除集合`),
         },
       });
       logCloudBaseResult(server.logger, result);
+      const documents = normalizeNoSqlDocuments(result.Data);
       return {
         content: [
           {
             type: "text",
             text: JSON.stringify(
-              {
+              withCollectionName(collectionName, {
                 success: true,
                 requestId: result.RequestId,
-                data: result.Data,
+                data: documents,
+                total:
+                  typeof result.Pager?.Total === "number"
+                    ? result.Pager.Total
+                    : documents.length,
                 pager: result.Pager,
                 message: "文档查询成功",
-              },
+              }),
               null,
               2,
             ),
@@ -650,12 +691,15 @@ async function insertDocuments({
   });
   logCloudBaseResult(logger, result);
   return JSON.stringify(
-    {
+    withCollectionName(collectionName, {
       success: true,
       requestId: result.RequestId,
       insertedIds: result.InsertedIds,
+      insertedCount: Array.isArray(result.InsertedIds)
+        ? result.InsertedIds.length
+        : undefined,
       message: "文档插入成功",
-    },
+    }),
     null,
     2,
   );
@@ -695,14 +739,14 @@ async function updateDocuments({
   });
   logCloudBaseResult(logger, result);
   return JSON.stringify(
-    {
+    withCollectionName(collectionName, {
       success: true,
       requestId: result.RequestId,
       modifiedCount: result.ModifiedNum,
       matchedCount: result.MatchedNum,
       upsertedId: result.UpsertedId,
       message: "文档更新成功",
-    },
+    }),
     null,
     2,
   );
@@ -736,12 +780,12 @@ async function deleteDocuments({
   });
   logCloudBaseResult(logger, result);
   return JSON.stringify(
-    {
+    withCollectionName(collectionName, {
       success: true,
       requestId: result.RequestId,
       deleted: result.Deleted,
       message: "文档删除成功",
-    },
+    }),
     null,
     2,
   );
