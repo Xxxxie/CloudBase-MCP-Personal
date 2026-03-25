@@ -1018,6 +1018,11 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
       const functionDetail = await cloudbase.functions.getFunctionDetail(
         input.functionName,
       );
+
+      if (!functionDetail) {
+        throw new Error(`函数 ${input.functionName} 不存在或无法获取详情`);
+      }
+
       const currentVpc =
         typeof functionDetail.VpcConfig === "object" &&
         functionDetail.VpcConfig !== null &&
