@@ -8,14 +8,14 @@ const {
   mockCheckCollectionExists,
   mockDescribeCollection,
   mockCreateCollection,
-  mockQueryRecords,
+  mockCommonServiceCall,
 } = vi.hoisted(() => ({
   mockGetCloudBaseManager: vi.fn(),
   mockLogCloudBaseResult: vi.fn(),
   mockCheckCollectionExists: vi.fn(),
   mockDescribeCollection: vi.fn(),
   mockCreateCollection: vi.fn(),
-  mockQueryRecords: vi.fn(),
+  mockCommonServiceCall: vi.fn(),
 }));
 
 vi.mock("../cloudbase-manager.js", () => ({
@@ -66,16 +66,29 @@ describe("NoSQL database tools", () => {
     mockCreateCollection.mockResolvedValue({
       RequestId: "req-create",
     });
-    mockQueryRecords.mockResolvedValue({
-      RequestId: "req-query",
-      Data: [
-        "{\"_id\":\"doc-1\",\"name\":\"chain_nosql_probe_001\",\"status\":\"active\"}",
-      ],
-      Pager: {
-        Total: 1,
-        Limit: 100,
-        Offset: 0,
-      },
+    mockCommonServiceCall.mockImplementation(async ({ Action }) => {
+      if (Action === "QueryRecords") {
+        return {
+          RequestId: "req-query",
+          Data: [
+            "{\"_id\":\"doc-1\",\"name\":\"chain_nosql_probe_001\",\"status\":\"active\"}",
+          ],
+          Pager: {
+            Total: 1,
+            Limit: 100,
+            Offset: 0,
+          },
+        };
+      }
+
+      if (Action === "PutItem") {
+        return {
+          RequestId: "req-insert",
+          InsertedIds: ["doc-1"],
+        };
+      }
+
+      throw new Error(`Unexpected action: ${Action}`);
     });
     mockGetCloudBaseManager.mockResolvedValue({
       env: {
@@ -95,35 +108,34 @@ describe("NoSQL database tools", () => {
         createCollection: mockCreateCollection,
       },
       commonService: vi.fn(() => ({
-        call: mockQueryRecords,
+        call: mockCommonServiceCall,
       })),
     });
   });
 
-  it("readNoSqlDatabaseContent should parse stringified query records into objects", async () => {
+  it("readNoSqlDatabaseContent should normalize stringified query records", async () => {
     const { tools } = createMockServer();
 
     const result = await tools.readNoSqlDatabaseContent.handler({
-      collectionName: "t_nosql_chain_***",
+      collectionName: "t_nosql_orders",
       query: { name: "chain_nosql_probe_001" },
     });
 
     const payload = JSON.parse(result.content[0].text);
 
-    expect(mockQueryRecords).toHaveBeenCalledWith(
+    expect(mockCommonServiceCall).toHaveBeenCalledWith(
       expect.objectContaining({
         Action: "QueryRecords",
         Param: expect.objectContaining({
-          TableName: "t_nosql_chain_***",
+          TableName: "t_nosql_orders",
           MgoQuery: JSON.stringify({ name: "chain_nosql_probe_001" }),
         }),
       }),
     );
     expect(payload).toMatchObject({
       success: true,
-      collection: "t_nosql_chain_test",
-      collectionName: "t_nosql_chain_test",
-      canonicalCollectionName: "t_nosql_chain_test",
+      collection: "t_nosql_orders",
+      collectionName: "t_nosql_orders",
       requestId: "req-query",
       total: 1,
       data: [
@@ -139,42 +151,73 @@ describe("NoSQL database tools", () => {
         Offset: 0,
       },
     });
+    expect(payload).not.toHaveProperty("nextActions");
   });
 
-  it("NoSQL chain responses should include explicit operation keywords", async () => {
+  it("collection-scoped responses should echo the requested collection name", async () => {
     const { tools } = createMockServer();
+
+    const checkResult = await tools.readNoSqlDatabaseStructure.handler({
+      action: "checkCollection",
+      collectionName: "t_nosql_products",
+    });
+    const checkPayload = JSON.parse(checkResult.content[0].text);
+    expect(checkPayload.collection).toBe("t_nosql_products");
+    expect(checkPayload.collectionName).toBe("t_nosql_products");
 
     const describeResult = await tools.readNoSqlDatabaseStructure.handler({
       action: "describeCollection",
-      collectionName: "t_nosql_chain_test",
+      collectionName: "t_nosql_products",
     });
     const describePayload = JSON.parse(describeResult.content[0].text);
-    expect(describePayload.collection).toBe("t_nosql_chain_test");
-    expect(describePayload.collectionName).toBe("t_nosql_chain_test");
-    expect(describePayload.canonicalCollectionName).toBe("t_nosql_chain_test");
-    expect(describePayload.step).toBe("查表");
-    expect(describePayload.summary).toBe("查表成功");
+    expect(describePayload.collection).toBe("t_nosql_products");
+    expect(describePayload.collectionName).toBe("t_nosql_products");
+    expect(describePayload.message).toBe("获取云开发数据库集合信息成功");
+
+    mockCheckCollectionExists.mockResolvedValue({
+      RequestId: "req-check-ready",
+      Exists: true,
+    });
+    const createResult = await tools.writeNoSqlDatabaseStructure.handler({
+      action: "createCollection",
+      collectionName: "t_nosql_products",
+    });
+    const createPayload = JSON.parse(createResult.content[0].text);
+    expect(createPayload.collection).toBe("t_nosql_products");
+    expect(createPayload.collectionName).toBe("t_nosql_products");
+    expect(createPayload.action).toBe("createCollection");
 
     const insertResult = await tools.writeNoSqlDatabaseContent.handler({
       action: "insert",
-      collectionName: "t_nosql_chain_test",
+      collectionName: "t_nosql_products",
       documents: [{ name: "chain_nosql_probe_001", status: "active" }],
     });
     const insertPayload = JSON.parse(insertResult.content[0].text);
-    expect(insertPayload.collection).toBe("t_nosql_chain_test");
-    expect(insertPayload.collectionName).toBe("t_nosql_chain_test");
-    expect(insertPayload.canonicalCollectionName).toBe("t_nosql_chain_test");
-    expect(insertPayload.summary).toBe("插入成功");
+    expect(insertPayload.collection).toBe("t_nosql_products");
+    expect(insertPayload.collectionName).toBe("t_nosql_products");
+    expect(insertPayload.insertedIds).toEqual(["doc-1"]);
+    expect(insertPayload.insertedCount).toBe(1);
+    expect(insertPayload.message).toBe("文档插入成功");
+    expect(insertPayload).not.toHaveProperty("nextActions");
+  });
 
-    const queryResult = await tools.readNoSqlDatabaseContent.handler({
-      collectionName: "t_nosql_chain_test",
-      query: { name: "chain_nosql_probe_001" },
+  it("readNoSqlDatabaseContent should keep non-document strings untouched", async () => {
+    mockCommonServiceCall.mockImplementationOnce(async () => ({
+      RequestId: "req-query-raw",
+      Data: ["raw-value"],
+      Pager: {
+        Total: 1,
+        Limit: 100,
+        Offset: 0,
+      },
+    }));
+
+    const { tools } = createMockServer();
+    const result = await tools.readNoSqlDatabaseContent.handler({
+      collectionName: "t_nosql_products",
     });
-    const queryPayload = JSON.parse(queryResult.content[0].text);
-    expect(queryPayload.collection).toBe("t_nosql_chain_test");
-    expect(queryPayload.collectionName).toBe("t_nosql_chain_test");
-    expect(queryPayload.canonicalCollectionName).toBe("t_nosql_chain_test");
-    expect(queryPayload.summary).toBe("查行成功");
-    expect(queryPayload.message).toContain("查行成功");
+    const payload = JSON.parse(result.content[0].text);
+
+    expect(payload.data).toEqual(["raw-value"]);
   });
 });
