@@ -45,10 +45,10 @@ describe('Environment List Field Optimization', () => {
       Status: 'NORMAL',
       EnvType: 'baas',
       Region: 'ap-shanghai',
+      PackageId: 'baas_personal',
       PackageName: '个人版',
       IsDefault: true,
     });
-    expect(simplified[0]).not.toHaveProperty('PackageId');
 
     // Verify removed fields are not present
     expect(simplified[0]).not.toHaveProperty('CreateTime');
@@ -107,6 +107,7 @@ describe('Environment List Field Optimization', () => {
         Status: 'NORMAL',
         EnvType: 'baas',
         Region: 'ap-shanghai',
+        PackageId: 'baas_personal',
         PackageName: '个人版',
         IsDefault: true,
         Databases: [{ InstanceId: 'db-1' }],
@@ -117,6 +118,7 @@ describe('Environment List Field Optimization', () => {
         Status: 'NORMAL',
         EnvType: 'weda',
         Region: 'ap-beijing',
+        PackageId: 'baas_free',
         PackageName: '免费版',
         IsDefault: false,
         Databases: [{ InstanceId: 'db-2' }],
@@ -132,20 +134,20 @@ describe('Environment List Field Optimization', () => {
       Status: 'NORMAL',
       EnvType: 'baas',
       Region: 'ap-shanghai',
+      PackageId: 'baas_personal',
       PackageName: '个人版',
       IsDefault: true,
     });
-    expect(simplified[0]).not.toHaveProperty('PackageId');
     expect(simplified[1]).toEqual({
       EnvId: 'env-2',
       Alias: 'Environment 2',
       Status: 'NORMAL',
       EnvType: 'weda',
       Region: 'ap-beijing',
+      PackageId: 'baas_free',
       PackageName: '免费版',
       IsDefault: false,
     });
-    expect(simplified[1]).not.toHaveProperty('PackageId');
   });
 
   test('should preserve undefined values for optional fields', () => {
@@ -174,5 +176,4 @@ describe('Environment List Field Optimization', () => {
     expect(simplified[0]).not.toHaveProperty('PackageName');
   });
 });
-
 

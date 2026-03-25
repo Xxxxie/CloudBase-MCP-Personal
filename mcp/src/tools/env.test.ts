@@ -340,7 +340,6 @@ describe("env tools - envQuery", () => {
         Alias: "alpha-beta",
       },
     ]);
-    expect(payload.EnvList[0]).not.toHaveProperty("PackageId");
     expect(payload.TotalCount).toBe(2);
     expect(payload.Offset).toBe(1);
     expect(payload.Limit).toBe(1);
@@ -358,8 +357,8 @@ describe("env tools - envQuery", () => {
       commonService: vi.fn(() => ({
         call: vi.fn().mockResolvedValue({
           EnvList: [
-            { EnvId: "env-test", Alias: "bound" },
-            { EnvId: "env-other", Alias: "other" },
+            { EnvId: "env-test", Alias: "bound", PackageId: "baas_personal" },
+            { EnvId: "env-other", Alias: "other", PackageId: "baas_free" },
           ],
         }),
       })),
@@ -374,25 +373,43 @@ describe("env tools - envQuery", () => {
       (await tools.envQuery.handler({ action: "list", envId: "env-other" })).content[0].text,
     );
 
-    expect(unfiltered.EnvList).toEqual([{ EnvId: "env-test", Alias: "bound" }]);
+    expect(unfiltered.EnvList).toEqual([{ EnvId: "env-test", Alias: "bound", PackageId: "baas_personal" }]);
     expect(unfiltered.AppliedFilters.currentEnvOnly).toBe(true);
-    expect(filtered.EnvList).toEqual([{ EnvId: "env-other", Alias: "other" }]);
+    expect(filtered.EnvList).toEqual([{ EnvId: "env-other", Alias: "other", PackageId: "baas_free" }]);
     expect(filtered.AppliedFilters.currentEnvOnly).toBe(false);
+    expect(filtered.RecommendedNextAction).toMatchObject({
+      tool: "envQuery",
+      action: "info",
+    });
   });
 
   it("envQuery(info) should preserve detailed fields such as PackageId", async () => {
+    const getEnvInfo = vi.fn().mockResolvedValue({
+      EnvInfo: {
+        EnvId: "env-test",
+        Alias: "bound",
+        PackageId: "baas_personal",
+        PackageName: "个人版",
+        Storages: [{ Bucket: "bucket-1" }],
+      },
+    });
+    const commonServiceCall = vi.fn().mockResolvedValue({
+      EnvBillingInfoList: [
+        {
+          EnvId: "env-test",
+          ExpireTime: "2026-12-31 00:00:00",
+          PayMode: "PREPAYMENT",
+          IsAutoRenew: true,
+        },
+      ],
+    });
     mockGetCloudBaseManager.mockResolvedValue({
       env: {
-        getEnvInfo: vi.fn().mockResolvedValue({
-          EnvInfo: {
-            EnvId: "env-test",
-            Alias: "bound",
-            PackageId: "baas_personal",
-            PackageName: "个人版",
-            Storages: [{ Bucket: "bucket-1" }],
-          },
-        }),
+        getEnvInfo,
       },
+      commonService: vi.fn(() => ({
+        call: commonServiceCall,
+      })),
     });
 
     const { tools } = createMockServer();
@@ -403,8 +420,47 @@ describe("env tools - envQuery", () => {
         EnvId: "env-test",
         PackageId: "baas_personal",
         PackageName: "个人版",
+        BillingInfo: {
+          ExpireTime: "2026-12-31 00:00:00",
+          PayMode: "PREPAYMENT",
+          IsAutoRenew: true,
+        },
       },
     });
     expect(payload.EnvInfo.Storages).toEqual([{ Bucket: "bucket-1" }]);
+    expect(commonServiceCall).toHaveBeenCalledWith({
+      Action: "DescribeBillingInfo",
+      Param: {
+        EnvId: "env-test",
+      },
+    });
+  });
+
+  it("envQuery(info) should prefer explicit envId over cached binding", async () => {
+    mockGetCloudBaseManager.mockResolvedValue({
+      env: {
+        getEnvInfo: vi.fn().mockResolvedValue({
+          EnvInfo: {
+            EnvId: "env-override",
+          },
+        }),
+      },
+      commonService: vi.fn(() => ({
+        call: vi.fn().mockResolvedValue({
+          EnvBillingInfoList: [{ EnvId: "env-override" }],
+        }),
+      })),
+    });
+
+    const { tools } = createMockServer();
+    await tools.envQuery.handler({ action: "info", envId: "env-override" });
+
+    expect(mockGetCloudBaseManager).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudBaseOptions: expect.objectContaining({
+          envId: "env-override",
+        }),
+      }),
+    );
   });
 });
