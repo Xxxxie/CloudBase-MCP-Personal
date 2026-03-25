@@ -903,7 +903,6 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
 
       logCloudBaseResult(server.logger, result);
 
-      // Auto-create HTTP access path for HTTP-type functions
       const nextActions = [
         {
           tool: "queryFunctions",
@@ -917,49 +916,35 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
         },
       ];
 
-      let accessResult: unknown | undefined;
-      let accessError: string | undefined;
       if (func.type === "HTTP") {
-        try {
-          const cloudbase = await getManager();
-          const accessPath = `/${functionName}`;
-          accessResult = await cloudbase.access.createAccess({
-            name: functionName,
-            path: accessPath,
-            type: 6 as 1 | 2,
-            auth: false,
-          });
-          logCloudBaseResult(server.logger, accessResult);
-          nextActions.push({
-            tool: "queryGateway",
-            action: "getAccess",
-            reason: "确认 HTTP 访问路径是否已生效",
-          });
-          nextActions.push({
-            tool: "writeSecurityRule",
-            action: "写入安全规则",
-            reason:
-              "HTTP 函数默认安全规则不允许匿名访问，调用返回 EXCEED_AUTHORITY 时需配置函数安全规则放开权限",
-          });
-        } catch (err) {
-          accessError = err instanceof Error ? err.message : String(err);
-          console.warn(
-            `[createFunction] HTTP 函数 ${functionName} 创建成功，但自动创建 HTTP 访问路径失败: ${accessError}`,
-          );
-          nextActions.push({
-            tool: "manageGateway",
-            action: "createAccess",
-            reason:
-              "HTTP 函数需要创建 HTTP 触发路径才能通过 URL 访问，请手动创建访问路径并显式传入 auth=false 以允许匿名访问",
-          });
-        }
+        nextActions.push({
+          tool: "manageGateway",
+          action: "createAccess",
+          reason:
+            "如果需要通过 URL 访问 HTTP 函数，请按实际路径和鉴权需求显式创建访问入口，不要默认假设 /函数名 已存在",
+        });
+        nextActions.push({
+          tool: "queryGateway",
+          action: "getAccess",
+          reason: "交付前确认 HTTP 访问路径是否已存在并已生效",
+        });
+        nextActions.push({
+          tool: "readSecurityRule",
+          action: "读取安全规则",
+          reason:
+            "评测、浏览器或其他外部调用方可能以匿名身份访问；若直接报 EXCEED_AUTHORITY，应先读取当前函数安全规则",
+        });
+        nextActions.push({
+          tool: "writeSecurityRule",
+          action: "写入安全规则",
+          reason:
+            "只有在确认需要匿名访问时，才按实际安全要求调整函数安全规则，例如处理 EXCEED_AUTHORITY",
+        });
       }
 
       const message =
         func.type === "HTTP"
-          ? accessError
-            ? `已创建 HTTP 函数 ${functionName}，但自动创建 HTTP 访问路径失败（${accessError}），请手动调用 manageGateway(action="createAccess", auth=false) 创建访问路径`
-            : `已创建 HTTP 函数 ${functionName} 并自动创建了 HTTP 访问路径 /${functionName}。注意：HTTP 函数默认安全规则不允许匿名访问，如果外部调用返回 EXCEED_AUTHORITY 错误，请调用 writeSecurityRule(resourceType="function", aclTag="CUSTOM", rule="true") 放开函数的访问权限。`
+          ? `已创建 HTTP 函数 ${functionName}。如果后续需要通过 URL 访问，请显式调用 manageGateway(action="createAccess") 按实际路径和鉴权需求创建访问入口。评测或其他外部调用方可能会以匿名身份访问，而且失败后不一定会把 EXCEED_AUTHORITY 再反馈给 AI；交付前请主动确认访问路径和函数安全规则，若已出现 EXCEED_AUTHORITY，请先调用 readSecurityRule(resourceType="function") 查看当前规则，再按需要使用 writeSecurityRule 调整权限。`
           : `已创建函数 ${functionName}`;
 
       return buildEnvelope(
@@ -967,7 +952,6 @@ export function registerFunctionTools(server: ExtendedMcpServer) {
           action: input.action,
           functionName,
           raw: result as Record<string, unknown>,
-          ...(accessResult ? { accessPath: accessResult } : {}),
         },
         message,
         nextActions,
