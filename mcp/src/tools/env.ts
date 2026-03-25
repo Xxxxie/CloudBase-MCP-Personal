@@ -817,21 +817,29 @@ export function registerEnvTools(server: ExtendedMcpServer) {
             const cloudbaseHosting = await getManager();
             const websiteConfig = await cloudbaseHosting.hosting.getWebsiteConfig();
             logCloudBaseResult(server.logger, websiteConfig);
+            const hostingResult = {
+              ...(websiteConfig as Record<string, unknown>),
+              CdnDomain: (websiteConfig as Record<string, unknown>).CdnDomain ?? null,
+              Bucket: (websiteConfig as Record<string, unknown>).Bucket ?? null,
+            };
 
-            // Also fetch env info to get CdnDomain and Bucket
-            const envInfo = await cloudbaseHosting.env.getEnvInfo() as {
-              EnvInfo?: {
-                StaticStorages?: Array<{ StaticDomain?: string }>;
-                Storages?: Array<{ Bucket?: string }>;
+            try {
+              const envInfo = await cloudbaseHosting.env.getEnvInfo() as {
+                EnvInfo?: {
+                  StaticStorages?: Array<{ StaticDomain?: string; Bucket?: string }>;
+                };
               };
-            };
-            logCloudBaseResult(server.logger, envInfo);
+              logCloudBaseResult(server.logger, envInfo);
 
-            result = {
-              ...websiteConfig,
-              CdnDomain: envInfo.EnvInfo?.StaticStorages?.[0]?.StaticDomain || null,
-              Bucket: envInfo.EnvInfo?.Storages?.[0]?.Bucket || null,
-            };
+              hostingResult.CdnDomain = envInfo.EnvInfo?.StaticStorages?.[0]?.StaticDomain ?? hostingResult.CdnDomain;
+              hostingResult.Bucket = envInfo.EnvInfo?.StaticStorages?.[0]?.Bucket ?? hostingResult.Bucket;
+            } catch (hostingInfoError) {
+              debug("Failed to enrich hosting envQuery result with env info", {
+                error: hostingInfoError,
+              });
+            }
+
+            result = hostingResult;
             break;
           }
 
