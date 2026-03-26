@@ -28,4 +28,19 @@ describe("rag tools", () => {
       }),
     ).rejects.toThrow("检索内容不能为空");
   });
+
+  it("searchKnowledgeBase should expose skill mode and skillName", async () => {
+    const { server, tools } = createMockServer();
+
+    await registerRagTools(server);
+
+    expect(tools.searchKnowledgeBase.meta.inputSchema.mode.options).toEqual(
+      expect.arrayContaining(["vector", "skill", "openapi"]),
+    );
+    expect(tools.searchKnowledgeBase.meta.inputSchema.mode.options).not.toContain(
+      "doc",
+    );
+    expect(tools.searchKnowledgeBase.meta.inputSchema.skillName).toBeDefined();
+    expect(tools.searchKnowledgeBase.meta.inputSchema.docName).toBeUndefined();
+  });
 });
