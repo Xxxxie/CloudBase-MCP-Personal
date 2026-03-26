@@ -194,11 +194,11 @@ export function resolveAuthOptions(options?: AuthOptions & {
     normalizeOptionalString(options?.oauthEndpoint) ??
     normalizeOptionalString(options?.serverAuthOptions?.oauthEndpoint) ??
     envOAuthEndpoint;
-  const oauthCustom =
+  const explicitOAuthCustom =
     normalizeOptionalBoolean(options?.oauthCustom) ??
     normalizeOptionalBoolean(options?.serverAuthOptions?.oauthCustom) ??
-    envOAuthCustom ??
-    false;
+    envOAuthCustom;
+  const oauthCustom = explicitOAuthCustom ?? (oauthEndpoint ? true : false);
   const authMode = explicitAuthMode ?? "device";
 
   return {
@@ -226,6 +226,10 @@ export function getAuthConfigValidationError(options: ResolvedAuthOptions): stri
 
   if (options.oauthCustom && !options.oauthEndpoint) {
     return "oauthCustom=true 时必须同时提供 oauthEndpoint。";
+  }
+
+  if (options.oauthEndpoint && !options.oauthCustom) {
+    return "配置自定义 oauthEndpoint 时必须启用 oauthCustom=true。";
   }
 
   return null;

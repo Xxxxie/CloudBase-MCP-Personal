@@ -414,15 +414,15 @@ export function registerEnvTools(server: ExtendedMcpServer) {
               oauthEndpoint: z
                 .string()
                 .optional()
-                .describe("高级可选：自定义 device-code 登录 endpoint，不传则使用 toolbox 默认 endpoint"),
+                .describe("高级可选：自定义 device-code 登录 endpoint。配置后 oauthCustom 默认按 true 处理"),
               clientId: z
                 .string()
                 .optional()
-                .describe("高级可选：自定义 device-code 登录 client_id，不传则使用 toolbox 默认值"),
+                .describe("高级可选：自定义 device-code 登录 client_id，不传则使用默认值"),
               oauthCustom: z
                 .boolean()
                 .optional()
-                .describe("高级可选：自定义 endpoint 返回格式是否为 toolbox custom 模式，默认 false"),
+                .describe("高级可选：自定义 endpoint 返回格式开关。未配置 endpoint 时默认 false；配置 endpoint 后默认 true，且不能设为 false"),
             }
           : {}),
         envId: z

@@ -36,6 +36,9 @@ const {
     if (options.oauthCustom && !options.oauthEndpoint) {
       return "oauthCustom=true 时必须同时提供 oauthEndpoint。";
     }
+    if (options.oauthEndpoint && !options.oauthCustom) {
+      return "配置自定义 oauthEndpoint 时必须启用 oauthCustom=true。";
+    }
     return null;
   }),
   mockSupervisorLoginByWebAuth: vi.fn(),
@@ -54,7 +57,11 @@ const {
     oauthEndpoint:
       options.oauthEndpoint ?? options.serverAuthOptions?.oauthEndpoint,
     oauthCustom:
-      options.oauthCustom ?? options.serverAuthOptions?.oauthCustom ?? false,
+      options.oauthCustom ??
+      options.serverAuthOptions?.oauthCustom ??
+      ((options.oauthEndpoint ?? options.serverAuthOptions?.oauthEndpoint)
+        ? true
+        : false),
     usesToolboxDefaults:
       !options.authMode &&
       !options.clientId &&
@@ -271,6 +278,7 @@ describe("env tools - auth", () => {
     expect(callArgs.getOAuthEndpoint("ignored")).toBe(
       "https://custom.example.com/oauth",
     );
+    expect(callArgs.custom).toBe(true);
   });
 
   it("auth(action=start_auth) should reject oauthCustom without endpoint", async () => {
@@ -282,6 +290,18 @@ describe("env tools - auth", () => {
 
     expect(payload).toHaveProperty("code", "INVALID_ARGS");
     expect(payload.message).toContain("oauthCustom=true");
+  });
+
+  it("auth(action=start_auth) should reject oauthEndpoint when oauthCustom is explicitly false", async () => {
+    const result = await tools.auth.handler({
+      action: "start_auth",
+      oauthEndpoint: "https://custom.example.com/oauth",
+      oauthCustom: false,
+    });
+    const payload = JSON.parse(result.content[0].text);
+
+    expect(payload).toHaveProperty("code", "INVALID_ARGS");
+    expect(payload.message).toContain("oauthEndpoint");
   });
 
   it("auth(action=set_env, envId) should accept direct env binding", async () => {

@@ -92,6 +92,19 @@ describe("auth config resolution", () => {
     });
   });
 
+  it("should default oauthCustom to true when oauthEndpoint is configured", async () => {
+    const { resolveAuthOptions } = await import("./auth.js");
+
+    expect(
+      resolveAuthOptions({
+        oauthEndpoint: "https://custom.example.com/oauth",
+      }),
+    ).toMatchObject({
+      oauthEndpoint: "https://custom.example.com/oauth",
+      oauthCustom: true,
+    });
+  });
+
   it("should validate oauthCustom requires endpoint", async () => {
     const { getAuthConfigValidationError } = await import("./auth.js");
 
@@ -102,6 +115,19 @@ describe("auth config resolution", () => {
         usesToolboxDefaults: false,
       }),
     ).toContain("oauthCustom=true");
+  });
+
+  it("should reject oauthEndpoint when oauthCustom is explicitly false", async () => {
+    const { getAuthConfigValidationError } = await import("./auth.js");
+
+    expect(
+      getAuthConfigValidationError({
+        authMode: "device",
+        oauthEndpoint: "https://custom.example.com/oauth",
+        oauthCustom: false,
+        usesToolboxDefaults: false,
+      }),
+    ).toContain("oauthEndpoint");
   });
 
   it("should reject device-only overrides when authMode is web", async () => {
