@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { registerEnvTools } from "./env.js";
 import type { ExtendedMcpServer } from "../server.js";
 
@@ -152,9 +152,11 @@ function createMockServer(ide = "TestIDE", authOptions?: any) {
 
 describe("env tools - auth", () => {
   let tools: ReturnType<typeof createMockServer>["tools"];
+  const originalCloudbaseEnvId = process.env.CLOUDBASE_ENV_ID;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.CLOUDBASE_ENV_ID;
     mockGetCachedEnvId.mockReturnValue(null);
     mockListAvailableEnvCandidates.mockResolvedValue([]);
     mockGetAuthProgressState.mockResolvedValue({
@@ -194,6 +196,15 @@ describe("env tools - auth", () => {
       },
     });
     ({ tools } = createMockServer());
+  });
+
+  afterEach(() => {
+    if (originalCloudbaseEnvId === undefined) {
+      delete process.env.CLOUDBASE_ENV_ID;
+      return;
+    }
+
+    process.env.CLOUDBASE_ENV_ID = originalCloudbaseEnvId;
   });
 
   it("should expose auth tool and remove standalone logout tool", () => {
