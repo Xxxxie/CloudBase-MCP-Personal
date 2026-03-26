@@ -523,11 +523,11 @@ export async function registerRagTools(server: ExtendedMcpServer) {
     "searchKnowledgeBase",
     {
       title: "云开发知识库检索",
-      description: `云开发知识库智能检索工具，支持向量查询 (vector)、固定文档 (doc) 和 OpenAPI 文档 (openapi) 查询。
+      description: `云开发知识库智能检索工具，支持向量查询 (vector)、固定技能文档 (skill) 和 OpenAPI 文档 (openapi) 查询。
 
-      强烈推荐始终优先使用固定文档 (doc) 或 OpenAPI 文档 (openapi) 模式进行检索，仅当固定文档无法覆盖你的问题时，再使用向量查询 (vector) 模式。
+      强烈推荐始终优先使用固定技能文档 (skill) 或 OpenAPI 文档 (openapi) 模式进行检索，仅当固定技能文档无法覆盖你的问题时，再使用向量查询 (vector) 模式。
 
-      固定文档 (doc) 查询当前支持 ${skills.length} 个固定文档，分别是：
+      固定技能文档 (skill) 查询当前支持 ${skills.length} 个固定文档，分别是：
       ${skills
           .map(
             (skill) =>
@@ -541,15 +541,15 @@ export async function registerRagTools(server: ExtendedMcpServer) {
           .map((api) => `API名：${api.name} API介绍：${api.description}`)
           .join("\n")}`,
       inputSchema: {
-        mode: z.enum(["vector", "doc", "openapi"]),
-        docName: z
+        mode: z.enum(["vector", "skill", "openapi"]),
+        skillName: z
           .enum(
             skills.map((skill) =>
               path.basename(path.dirname(skill.absolutePath)),
             ) as unknown as [string, ...string[]],
           )
           .optional()
-          .describe("mode=doc 时指定。文档名称。"),
+          .describe("mode=skill 时指定。技能名称。"),
         apiName: z
           .enum(
             openapis.map((api) => api.name) as unknown as [string, ...string[]],
@@ -597,19 +597,19 @@ export async function registerRagTools(server: ExtendedMcpServer) {
       limit = 5,
       threshold = 0.5,
       mode,
-      docName,
+      skillName,
       apiName,
     }) => {
-      if (mode === "doc") {
+      if (mode === "skill") {
         const absolutePath = skills.find((skill) =>
-          skill.absolutePath.includes(docName!),
+          skill.absolutePath.includes(skillName!),
         )!.absolutePath;
 
         return {
           content: [
             {
               type: "text",
-              text: `The doc's absolute path is: ${absolutePath}. ${(await fs.readFile(absolutePath)).toString()}`,
+              text: `The skill doc's absolute path is: ${absolutePath}. ${(await fs.readFile(absolutePath)).toString()}`,
             },
           ],
         };
