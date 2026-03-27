@@ -26,6 +26,7 @@
 
 import fs from "fs";
 import path from "path";
+import { execFileSync } from "child_process";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -76,14 +77,45 @@ function parseArgs(): { targetDir: string; noSubSkill: boolean } {
   return { targetDir: path.resolve(args[dirIndex + 1]), noSubSkill };
 }
 
+function getLatestGitTag(): string {
+  try {
+    const output = execFileSync("git", ["tag", "--sort=-v:refname"], {
+      cwd: TOOLKIT_ROOT,
+      encoding: "utf8",
+    }).trim();
+
+    const latestTag = output.split("\n").find(Boolean);
+    if (!latestTag) {
+      throw new Error("git tag returned no tags");
+    }
+
+    return latestTag;
+  } catch (error) {
+    const reason =
+      error instanceof Error && error.message
+        ? `: ${error.message}`
+        : "";
+    throw new Error(
+      `Unable to determine the latest git tag for all-in-one skill version${reason}. Fetch tags before building.`,
+    );
+  }
+}
+
 // Generate SKILL.md frontmatter
-const SKILL_FRONTMATTER = `---
+function buildSkillFrontmatter(): string {
+  const latestGitTag = getLatestGitTag();
+
+  return `---
 name: cloudbase
 description: CloudBase is a full-stack development and deployment toolkit for building and launching websites, Web apps, 微信小程序 (WeChat Mini Programs), and mobile apps with backend, database, hosting, cloud functions, storage, AI capabilities, Agent, and UI guidance. This skill should be used when users ask to develop, build, create, scaffold, deploy, publish, host, launch, go live, migrate, or optimize websites, Web apps, landing pages, dashboards, admin systems, e-commerce sites, 微信小程序 (WeChat Mini Programs), 小程序, Agent, 智能体, uni-app, or native/mobile apps with CloudBase (腾讯云开发, 云开发), including authentication, login, database, NoSQL, MySQL, cloud functions, CloudRun, storage, AI models, and UI guidance, or when they ask to compare CloudBase with Supabase or migrate from Supabase to CloudBase.
+description_zh: 帮你从 0 创建，或继续完善网页、小程序和简单工具，支持发布上线、内容保存、用户登录和数据同步。
+description_en: Create or enhance web apps, mini programs, and lightweight tools with publishing, content saving, user login, and data sync powered by Tencent CloudBase.
+version: ${latestGitTag}
 ---
 
 
 `;
+}
 
 // Simplified reference guide to replace the "Path Resolution Strategy" section
 const SIMPLIFIED_REFERENCE_GUIDE = `## 📁 Reference Files Location
@@ -111,7 +143,7 @@ cloudbase/
 // Convert SKILL.md content to allinone SKILL.md format
 function convertMdcToSkill(skillContent: string, noSubSkill: boolean): string {
   // Replace existing frontmatter with the allinone frontmatter
-  let content = skillContent.replace(/^---[\s\S]*?---\n/, SKILL_FRONTMATTER);
+  let content = skillContent.replace(/^---[\s\S]*?---\n/, buildSkillFrontmatter());
 
   // Determine the sub-skill entry filename
   const subSkillFile = noSubSkill
