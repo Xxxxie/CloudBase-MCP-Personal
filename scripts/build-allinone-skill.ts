@@ -84,9 +84,20 @@ function getLatestGitTag(): string {
       encoding: "utf8",
     }).trim();
 
-    return output.split("\n").find(Boolean) ?? "v1.0.0";
-  } catch {
-    return "v1.0.0";
+    const latestTag = output.split("\n").find(Boolean);
+    if (!latestTag) {
+      throw new Error("git tag returned no tags");
+    }
+
+    return latestTag;
+  } catch (error) {
+    const reason =
+      error instanceof Error && error.message
+        ? `: ${error.message}`
+        : "";
+    throw new Error(
+      `Unable to determine the latest git tag for all-in-one skill version${reason}. Fetch tags before building.`,
+    );
   }
 }
 
