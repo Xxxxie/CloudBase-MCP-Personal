@@ -67,8 +67,44 @@ test.skipIf(!hasNode24ViaNvm())(
 
     const mainSkill = fs.readFileSync(path.join(outputDir, 'SKILL.md'), 'utf8');
     expect(mainSkill).toContain('name: cloudbase');
+    expect(mainSkill).toContain('description_zh:');
+    expect(mainSkill).toContain('description_en:');
+    expect(mainSkill).toMatch(/^version:\s+\d+\.\d+\.\d+(?:-[^\s]+)?$/m);
+    expect(mainSkill).not.toContain('version: v');
     expect(mainSkill).toContain('references/auth-web/SKILL.md');
     expect(mainSkill).toContain('## Activation Contract');
     expect(mainSkill).toContain('Provider status and publishable key');
+  },
+);
+
+test.skipIf(!hasNode24ViaNvm())(
+  'build-allinone-skill fails fast when git tags are unavailable',
+  () => {
+    const targetDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'cloudbase-allinone-build-no-tags-'),
+    );
+    const binDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cloudbase-fake-git-'));
+    tempDirs.push(targetDir, binDir);
+
+    const fakeGitPath = path.join(binDir, 'git');
+    fs.writeFileSync(
+      fakeGitPath,
+      '#!/bin/sh\nif [ "$1" = "tag" ]; then\n  exit 0\nfi\nexec /usr/bin/env git "$@"\n',
+      { mode: 0o755 },
+    );
+
+    expect(() =>
+      execFileSync(
+        '/bin/zsh',
+        [
+          '-lc',
+          `source "${NVM_SH}" && nvm use 24 >/dev/null && PATH="${binDir}:$PATH" node scripts/build-allinone-skill.ts --dir "${targetDir}"`,
+        ],
+        {
+          cwd: ROOT_DIR,
+          stdio: 'pipe',
+        },
+      ),
+    ).toThrow(/Unable to determine the latest git tag/);
   },
 );
