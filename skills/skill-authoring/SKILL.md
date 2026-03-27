@@ -1,6 +1,6 @@
 ---
 name: skill-authoring
-description: Design, improve, and evaluate reusable agent skills with high-quality SKILL.md files, precise trigger descriptions, progressive disclosure, and testable behavior. This skill should be used when users ask to create a new skill, rewrite or review an existing skill, improve skill trigger quality, organize skill references, or evaluate whether a skill should trigger and behave correctly.
+description: Design, improve, and evaluate reusable agent skills with high-quality SKILL.md files, precise trigger descriptions, progressive disclosure, and testable behavior. This skill should be used when users ask to create a new skill, rewrite or review an existing skill, audit a skill collection such as `config/source/skills` for redundancy or overlap, improve skill trigger quality, organize skill references, or evaluate whether a skill should trigger and behave correctly.
 alwaysApply: false
 ---
 
@@ -15,6 +15,7 @@ Use this skill when you need to:
 - Create a new `SKILL.md`
 - Improve an existing skill's `name` or `description`
 - Review whether a skill is too broad, too narrow, or poorly structured
+- Audit a local skill collection such as `config/source/skills` for redundancy, trigger overlap, or weak boundaries
 - Split a large skill into `SKILL.md` plus `references/`, `assets/`, or `scripts/`
 - Design evaluation prompts and review whether a skill triggers and behaves correctly
 
@@ -41,7 +42,11 @@ Use this skill when you need to:
    - Use the routing table to decide which reference file to read
    - Avoid loading every reference file by default
 
-5. **Evaluate before considering the skill complete**
+5. **Use collection-level review when the request is about many skills**
+   - When reviewing `config/source/skills`, check overlap, duplication, trigger boundaries, and progressive disclosure across neighboring skills
+   - Prefer evidence-based findings with concrete file references and rewrite guidance
+
+6. **Evaluate before considering the skill complete**
    - Create should-trigger and should-not-trigger prompts
    - Run them, review the results, and iterate on the skill
 
@@ -52,6 +57,7 @@ Use this skill when you need to:
 | Write or improve `name` and `description` | `references/frontmatter-patterns.md` |
 | Design skill anatomy and progressive disclosure | `references/structure-patterns.md` |
 | Draft a new skill or review an existing one | `references/templates.md` |
+| Audit `config/source/skills` for quality, redundancy, and overlap | `references/repo-skill-review.md` |
 | Build evaluation prompts and review outcomes | `references/evaluation.md` |
 | Compare good examples, weak examples, and rewrites | `references/examples.md` |
 
@@ -59,9 +65,10 @@ Use this skill when you need to:
 
 1. Identify the skill's job, boundary, and closest neighboring skills.
 2. Draft `name` and `description` with realistic trigger language.
-3. Write the main `SKILL.md` so it changes agent behavior after trigger.
-4. Move deep detail into `references/`, `assets/`, or `scripts/` as needed.
-5. Run evaluation prompts and revise until trigger quality and behavior are stable.
+3. If the task targets `config/source/skills`, read `references/repo-skill-review.md` and review neighboring skills before proposing rewrites.
+4. Write the main `SKILL.md` so it changes agent behavior after trigger.
+5. Move deep detail into `references/`, `assets/`, or `scripts/` as needed.
+6. Run evaluation prompts and revise until trigger quality and behavior are stable.
 
 ## Minimum self-check
 
@@ -72,3 +79,4 @@ Use this skill when you need to:
 - Does routing point to the right reference file for each task?
 - Are evaluation prompts present for both should-trigger and should-not-trigger cases?
 - Can you explain why this skill stays distinct from its nearest neighbors?
+- If reviewing a skill collection, can you point to redundancy, overlap, and missing boundaries with concrete evidence?
