@@ -156,7 +156,8 @@ function validateAndNormalizePath(inputPath: string): string {
 
   // Security check - ensure path is within current working directory
   const cwd = process.cwd();
-  if (!normalizedPath.startsWith(cwd + path.sep) && normalizedPath !== cwd) {
+  const prefix = cwd.endsWith(path.sep) ? cwd : cwd + path.sep;
+  if (!normalizedPath.startsWith(prefix) && normalizedPath !== cwd) {
     throw new Error(`Path must be within current working directory: ${cwd}`);
   }
 
@@ -735,6 +736,7 @@ for await (let x of res.textStream) {
 
             // Choose execution method based on run mode
             let child;
+            const script = `const { runCLI } = require('@cloudbase/functions-framework'); runCLI();`;
 
             if (runMode === 'agent') {
               const childEnv = {
@@ -745,7 +747,6 @@ for await (let x of res.textStream) {
                 RUN_MODE: 'agent',
                 ...extraEnv,
               };
-              const script = `const { runCLI } = require('@cloudbase/functions-framework'); runCLI();`;
               child = spawn(process.execPath, ['-e', script], {
                 cwd: targetPath,
                 env: childEnv,
@@ -760,7 +761,6 @@ for await (let x of res.textStream) {
                 ALLOWED_ORIGINS: '*',
                 ...extraEnv,
               };
-              const script = `const { runCLI } = require('@cloudbase/functions-framework'); runCLI();`;
               child = spawn(process.execPath, ['-e', script], {
                 cwd: targetPath,
                 env: childEnv,
@@ -797,7 +797,7 @@ for await (let x of res.textStream) {
                       port: runPort,
                       runMode: runMode,
                       isAgent: isAgent,
-                      command: command,
+                      command: script,
                       cwd: targetPath
                     },
                     message: `Started local run for ${runMode} service '${input.serverName}' on port ${runPort} (pid=${child.pid})`
